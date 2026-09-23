@@ -34,12 +34,12 @@ cd site && firebase emulators:start --only hosting
 | Path | Count | What |
 |---|---|---|
 | `public/index.html` | 1 | bilingual root, links to both language trees |
-| `public/{ja,en}/index.html` | 2 | home: the three datasets, what we do NOT sell, the no-email explanation, "data last updated" |
-| `public/{ja,en}/bet-a/index.html` | 2 | 年度 × セクター grid, every cell a link |
+| `public/{ja,en}/index.html` | 2 | home: hero line, the 40-day strip, three facts, three product cards, the flow diagram, "what we do not do" tiles, developer doors |
+| `public/{ja,en}/bet-a/index.html` | 2 | 年度 × セクター heatmap (classes h0..h6), every cell a link, row-total bars |
 | `public/{ja,en}/bet-a/<sector>-fy<year>.html` | 338 | one page per 府省セクター × 年度 |
-| `public/{ja,en}/bet-c/index.html` | 2 | 法人番号 差分 archive, SVG chart, schema |
-| `public/{ja,en}/pricing.html` | 2 | 準備中 / coming soon, no checkout |
-| `public/{ja,en}/privacy.html` | 2 | privacy, methodology, sources, removal policy |
+| `public/{ja,en}/bet-c/index.html` | 2 | 法人番号 差分 archive: the 40-day strip, daily chart, breakdown bars, schema in `<details>` |
+| `public/{ja,en}/pricing.html` | 2 | one line: 有料プランはまだ開設していません。/ Paid plans are not open yet. |
+| `public/{ja,en}/privacy.html` | 2 | six promise tiles, then the facts (button, scripts, anonymisation, numbers, sources, collection, removals) in `<details>` |
 | `public/data/**.json` | 172 | a JSON endpoint per data page + two indexes + `site.json` |
 | `public/feeds/nta-diff.xml` | 1 | weekly RSS of daily registry-diff counts |
 | `public/{robots.txt,sitemap.xml,llms.txt,404.html}` | 4 | crawl, index and AI-search surface |
@@ -92,12 +92,23 @@ network.
 
 ## Design
 
-One stylesheet, one system font stack, no webfont, no image file (the favicon
-is an inline data-URI SVG), no JavaScript except the 60-line intent counter.
-Light and dark come from `prefers-color-scheme` over CSS custom properties.
-Mobile-first: single column, tables in their own horizontal scroller, no
-horizontal page scroll at 375 px. The one chart is hand-rolled SVG with a
-`viewBox`, so it scales without a chart library and reads in both themes.
+Brief: `ops/design/site_redesign_v1.md` (token system, the 40-day strip,
+icons, wireframes, the no-excuses rule). Code is split into three stdlib
+modules next to `build.py`:
+
+* `theme.py` - the one stylesheet (漆喰/墨/なまこ/薄墨/青磁/朱印 tokens, light
+  default and dark via `prefers-color-scheme`, system 明朝/gothic/mono stacks,
+  `.w0`..`.w100` width classes so bars need no inline style);
+* `icons.py` - the in-house 24 px line icon set (`currentColor`, aria-hidden,
+  always next to a text label);
+* `charts.py` - the 40-day strip, card thumbnails, box plot, daily chart and
+  HTML bars. Most SVGs use percentage x and pixel y with no `viewBox`, so they
+  fit any width at 360 px while their text stays at real font size.
+
+No webfont, no image file (the favicon is an inline data-URI SVG), no inline
+style or script, no JavaScript except the intent counter. Every chart has
+`role="img"` with `<title>`/`<desc>` and its numbers as text beside it.
+`prefers-reduced-motion` turns off the single strip reveal.
 
 ## The intent button and its contract with the Worker
 
@@ -201,10 +212,8 @@ day, and an unlabelled date invites the reader to call it stale.
 These are not presentation choices; removing any of them makes the page wrong.
 
 1. **There is no 落札率.** The national source publishes no 予定価格. Every
-   Bet-A page and every Bet-A JSON file says so explicitly. A paid tier selling
-   落札率・参考価格 reports therefore cannot be delivered from this dataset —
-   `/pricing.html` says that in plain words rather than letting the tier imply
-   otherwise.
+   Bet-A page carries the label 「予定価格: 非公表」 and every Bet-A JSON file
+   sets `award_ratio.available: false`.
 2. **Prefecture = the winner's registered head office**, joined via 法人番号 to
    the NTA registry, not the place of performance. It over-weights Tokyo.
 3. **Sector = which ministry bought**, derived from the 府省 code. It is not an

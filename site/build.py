@@ -39,6 +39,12 @@ import statistics
 import sys
 from pathlib import Path
 
+# Helper modules next to this file (standard library only).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import charts  # noqa: E402  the 40-day strip and the small charts
+from icons import icon  # noqa: E402  the in-house line icon set
+from theme import CSS  # noqa: E402  the one stylesheet
+
 # --------------------------------------------------------------------------
 # Paths
 # --------------------------------------------------------------------------
@@ -608,145 +614,7 @@ def load_bet_c():
 # Page shell
 # --------------------------------------------------------------------------
 
-CSS = """/* Deltakura - one stylesheet, no external assets, no webfonts, no trackers. */
-:root{
-  color-scheme: light dark;
-  --bg:#ffffff; --bg-soft:#f6f7f9; --bg-card:#ffffff;
-  --fg:#16191d; --fg-muted:#5b6470; --fg-faint:#848d99;
-  --line:#e2e6ea; --line-strong:#c9d0d8;
-  --accent:#1f5f8b; --accent-fg:#ffffff; --accent-soft:#e8f0f6;
-  --warn-bg:#fdf6e3; --warn-line:#e6d5a8; --warn-fg:#6b551a;
-  --bar:#4a7fa5;
-  --radius:10px;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans",
-          "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
-}
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#101317; --bg-soft:#161a20; --bg-card:#171b21;
-    --fg:#e6e9ed; --fg-muted:#a3acb8; --fg-faint:#7b8592;
-    --line:#252b33; --line-strong:#39414b;
-    --accent:#7fb2d4; --accent-fg:#0d1116; --accent-soft:#1a2630;
-    --warn-bg:#241f12; --warn-line:#4a3f22; --warn-fg:#dcc98a;
-    --bar:#6699bd;
-  }
-}
-*,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0; background:var(--bg); color:var(--fg);
-  font-family:var(--sans); font-size:16px; line-height:1.7;
-  font-feature-settings:"palt" 1;
-}
-.wrap{max-width:60rem; margin:0 auto; padding:0 16px}
-a{color:var(--accent); text-underline-offset:2px}
-a:hover{text-decoration-thickness:2px}
-
-header.site{border-bottom:1px solid var(--line); background:var(--bg-soft)}
-header.site .wrap{display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; padding-top:.7rem; padding-bottom:.7rem}
-.brand{font-weight:700; letter-spacing:.02em; text-decoration:none; color:var(--fg); font-size:1.05rem}
-.brand span{color:var(--fg-faint); font-weight:400; margin-left:.4rem; font-size:.85rem}
-nav.site{display:flex; flex-wrap:wrap; gap:.15rem .9rem; margin-left:auto; font-size:.9rem}
-nav.site a{color:var(--fg-muted); text-decoration:none}
-nav.site a:hover,nav.site a[aria-current]{color:var(--fg); text-decoration:underline}
-.lang{font-size:.85rem; border:1px solid var(--line-strong); border-radius:999px; padding:.1rem .6rem; text-decoration:none; color:var(--fg-muted)}
-
-main{padding:1.5rem 0 3rem}
-h1{font-size:1.65rem; line-height:1.35; margin:.2rem 0 .6rem; letter-spacing:.01em}
-h2{font-size:1.2rem; margin:2.2rem 0 .6rem; padding-bottom:.25rem; border-bottom:1px solid var(--line)}
-h3{font-size:1rem; margin:1.4rem 0 .4rem}
-p{margin:.6rem 0}
-.lede{font-size:1.05rem; color:var(--fg-muted); margin-bottom:1.2rem}
-small,.small{font-size:.85rem}
-.muted{color:var(--fg-muted)}
-.faint{color:var(--fg-faint)}
-code,kbd{font-family:var(--mono); font-size:.88em; background:var(--bg-soft); border:1px solid var(--line); border-radius:4px; padding:.05em .35em}
-pre{background:var(--bg-soft); border:1px solid var(--line); border-radius:var(--radius); padding:.8rem 1rem; overflow-x:auto; font-family:var(--mono); font-size:.85rem; line-height:1.55}
-pre code{background:none; border:0; padding:0}
-hr{border:0; border-top:1px solid var(--line); margin:2rem 0}
-
-.status{display:flex; flex-wrap:wrap; gap:.35rem .9rem; align-items:baseline;
-  font-size:.85rem; color:var(--fg-muted); background:var(--bg-soft);
-  border:1px solid var(--line); border-radius:var(--radius); padding:.55rem .85rem; margin:1rem 0}
-.status b{color:var(--fg); font-weight:600}
-.dot{display:inline-block; width:.5rem; height:.5rem; border-radius:50%; background:var(--bar); margin-right:.35rem; vertical-align:baseline}
-
-.grid{display:grid; gap:1rem; grid-template-columns:1fr}
-@media(min-width:44rem){.grid.c3{grid-template-columns:repeat(3,1fr)} .grid.c2{grid-template-columns:repeat(2,1fr)}}
-.card{border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-card); padding:1rem 1.1rem; display:flex; flex-direction:column}
-.card h3{margin-top:0}
-.card p{font-size:.93rem}
-.card .spacer{flex:1}
-.tag{display:inline-block; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase;
-  border:1px solid var(--line-strong); border-radius:999px; padding:.05rem .55rem; color:var(--fg-muted); margin-bottom:.5rem}
-.tag.live{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
-.tag.soon{border-color:var(--warn-line); color:var(--warn-fg); background:var(--warn-bg)}
-
-.stats{display:grid; gap:.6rem; grid-template-columns:repeat(2,1fr); margin:1.2rem 0}
-@media(min-width:44rem){.stats{grid-template-columns:repeat(4,1fr)}}
-.stat{border:1px solid var(--line); border-radius:var(--radius); padding:.7rem .8rem; background:var(--bg-soft)}
-.stat .k{font-size:.78rem; color:var(--fg-muted); display:block; line-height:1.4}
-.stat .v{font-size:1.25rem; font-weight:650; font-variant-numeric:tabular-nums; letter-spacing:-.01em; display:block; margin-top:.15rem}
-.stat .u{font-size:.78rem; color:var(--fg-faint); display:block}
-
-.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); margin:1rem 0}
-table{border-collapse:collapse; width:100%; font-size:.88rem}
-caption{text-align:left; padding:.7rem .85rem; color:var(--fg-muted); font-size:.85rem; border-bottom:1px solid var(--line)}
-th,td{padding:.45rem .7rem; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
-thead th{background:var(--bg-soft); font-weight:600; font-size:.82rem; color:var(--fg-muted); position:sticky; top:0}
-tbody tr:last-child td{border-bottom:0}
-td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
-tbody tr:hover td{background:var(--bg-soft)}
-
-.note{border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-fg);
-  border-radius:var(--radius); padding:.8rem 1rem; margin:1.1rem 0; font-size:.9rem}
-.note p{margin:.35rem 0}
-.note strong{color:inherit}
-.attrib{font-size:.82rem; color:var(--fg-muted); border-left:3px solid var(--line-strong);
-  padding:.3rem 0 .3rem .8rem; margin:1rem 0; word-break:break-all}
-
-button.intent{
-  font:inherit; font-size:.9rem; cursor:pointer; border:1px solid var(--accent);
-  background:var(--accent); color:var(--accent-fg); border-radius:var(--radius);
-  padding:.45rem 1rem; margin-top:.6rem; align-self:flex-start;
-}
-button.intent:hover{filter:brightness(1.08)}
-button.intent[disabled]{background:var(--accent-soft); color:var(--accent); cursor:default; filter:none}
-button.intent[data-variant="quiet"]{background:transparent; color:var(--accent)}
-.intent-why{font-size:.8rem; color:var(--fg-faint); margin-top:.4rem}
-
-figure.chart{margin:1.2rem 0; border:1px solid var(--line); border-radius:var(--radius); padding:1rem .6rem .4rem; background:var(--bg-card)}
-figure.chart svg{display:block; width:100%; height:auto}
-figure.chart figcaption{font-size:.82rem; color:var(--fg-muted); padding:.5rem .6rem 0}
-.axis{stroke:var(--line-strong); stroke-width:1}
-.tick{fill:var(--fg-faint); font-size:10px; font-family:var(--sans)}
-.bar{fill:var(--bar)}
-.bar:hover{fill:var(--accent)}
-.baseline{stroke:var(--line); stroke-width:1; stroke-dasharray:2 3}
-
-ul.clean{list-style:none; padding:0; margin:.6rem 0}
-ul.clean li{padding:.28rem 0 .28rem 1.1rem; position:relative; font-size:.93rem}
-ul.clean li::before{content:"–"; position:absolute; left:0; color:var(--fg-faint)}
-ul.no li::before{content:"\\00d7"; color:var(--warn-fg)}
-ul.yes li::before{content:"\\2713"; color:var(--accent)}
-
-.yearnav{display:flex; flex-wrap:wrap; gap:.3rem; margin:.6rem 0 1.2rem}
-.yearnav a,.yearnav span{font-size:.85rem; font-variant-numeric:tabular-nums; border:1px solid var(--line);
-  border-radius:6px; padding:.15rem .5rem; text-decoration:none; color:var(--fg-muted); background:var(--bg-card)}
-.yearnav a:hover{border-color:var(--accent); color:var(--accent)}
-.yearnav span[aria-current]{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
-
-footer.site{border-top:1px solid var(--line); background:var(--bg-soft); padding:1.5rem 0 2.5rem; font-size:.85rem; color:var(--fg-muted)}
-footer.site a{color:var(--fg-muted)}
-footer.site .cols{display:grid; gap:1rem; grid-template-columns:1fr}
-@media(min-width:44rem){footer.site .cols{grid-template-columns:2fr 1fr 1fr}}
-footer.site h4{margin:0 0 .3rem; font-size:.82rem; color:var(--fg); letter-spacing:.04em; text-transform:uppercase}
-footer.site ul{list-style:none; margin:0; padding:0}
-footer.site li{padding:.12rem 0}
-.skip{position:absolute; left:-9999px}
-.skip:focus{position:static; display:inline-block; padding:.4rem .8rem; background:var(--accent); color:var(--accent-fg)}
-"""
+# The stylesheet lives in theme.py (token system: ops/design/site_redesign_v1.md).
 
 JS = """/* Deltakura intent button. No cookies, no email, no third party.
 
@@ -846,11 +714,10 @@ JS = """/* Deltakura intent button. No cookies, no email, no third party.
 def nav_items(lang: str):
     p = f"/{lang}/"
     return [
-        (p, t(lang, "ホーム", "Home")),
-        (p + "bet-a/", t(lang, "落札実績", "Tender awards")),
-        (p + "bet-c/", t(lang, "法人番号 差分", "Registry diff")),
+        (p + "bet-a/", t(lang, "落札統計", "Tender awards")),
+        (p + "bet-c/", t(lang, "法人番号の差分", "Registry diff")),
         (p + "pricing.html", t(lang, "料金", "Pricing")),
-        (p + "privacy.html", t(lang, "プライバシー・方法論", "Privacy & method")),
+        (p + "privacy.html", t(lang, "プライバシー", "Privacy")),
     ]
 
 
@@ -865,8 +732,14 @@ def render_page(
     alt_path: str,
     jsonld=None,
     is_data_page: bool = False,
+    attribution=None,
 ):
-    """Return (relative output path, html string)."""
+    """Return the html string.
+
+    `attribution` is a list of source lines. It is rendered once, in the
+    footer zone, on every page that shows a figure derived from the sources
+    (check() enforces the three parts: source, licence, modification).
+    """
     canonical = BASE_URL + path
     alt = BASE_URL + alt_path
     desc = desc_ja if lang == "ja" else desc_en
@@ -893,18 +766,31 @@ def render_page(
 
     nav = "".join(
         '<a href="{}"{}>{}</a>'.format(
-            e(href), ' aria-current="page"' if href == path else "", e(label)
+            e(href), ' aria-current="page"' if path.startswith(href) else "", e(label)
         )
         for href, label in nav_items(lang)
     )
-
-    footer_note_ja = (
-        "Deltakura は公開データの非公式アーカイブです。公式データではありません。"
-        "収集・正規化の過程で誤りが生じ得ます。重要な判断の前に必ず出典の原本をご確認ください。"
+    nav += '<a class="lang" href="{}" hreflang="{}" rel="alternate">{}</a>'.format(
+        e(alt_path), other, "English" if lang == "ja" else "日本語"
     )
-    footer_note_en = (
-        "Deltakura is an unofficial archive of public data. It is not an official source; "
-        "collection and parsing can introduce errors. Check the original source before relying on a number."
+
+    attrib = attribution_block(lang, attribution) if attribution else ""
+    disclaimer = t(
+        lang,
+        "Deltakura は非公式アーカイブです。数値は出典の原本でご確認ください。",
+        "Deltakura is an unofficial archive. Check the original source before relying on a number.",
+    )
+    foot_links = [
+        (OPERATOR_URL, t(lang, "運営: Sirevo", "Operated by Sirevo"), True),
+        (GITHUB_ORG, "GitHub", True),
+        (GITHUB_ISSUES, t(lang, "削除・訂正の依頼（GitHub Issues）", "Removal and corrections (GitHub Issues)"), True),
+        ("/feeds/nta-diff.xml", "RSS", False),
+        ("/data/", t(lang, "データファイル（JSON）", "Data files (JSON)"), False),
+        (f"/{lang}/privacy.html", t(lang, "プライバシー", "Privacy"), False),
+    ]
+    links = "".join(
+        '<a href="{}"{}>{}</a>'.format(e(h), ' rel="noopener"' if ext else "", e(label))
+        for h, label, ext in foot_links
     )
 
     doc = f"""<!DOCTYPE html>
@@ -926,46 +812,27 @@ def render_page(
 <meta property="og:locale" content="{'ja_JP' if lang == 'ja' else 'en_US'}">
 <meta name="robots" content="index,follow,max-snippet:-1">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#F2F3F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15181B" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="/assets/style.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2l6 11H2z' fill='%231f5f8b'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2l6 11H2z' fill='%233E7F74'/%3E%3C/svg%3E">
 <link rel="alternate" type="application/rss+xml" title="Deltakura Registry Diff (weekly)" href="/feeds/nta-diff.xml">
 {blocks}</head>
 <body>
 <a class="skip" href="#main">{e(t(lang, "本文へスキップ", "Skip to content"))}</a>
 <header class="site"><div class="wrap">
-<a class="brand" href="/{lang}/">{BRAND}<span>{BRAND_JA}</span></a>
+<a class="brand" href="/{lang}/">{icon("kura")}{BRAND}<small>{BRAND_JA}</small></a>
 <nav class="site" aria-label="{e(t(lang, 'メインナビゲーション', 'Main navigation'))}">{nav}</nav>
-<a class="lang" href="{e(alt_path)}" hreflang="{other}" rel="alternate">{"English" if lang == "ja" else "日本語"}</a>
 </div></header>
 <main id="main"><div class="wrap">
 {body}
 </div></main>
-<footer class="site"><div class="wrap"><div class="cols">
-<div>
-<h4>{BRAND}</h4>
-<p class="small">{e(t(lang, footer_note_ja, footer_note_en))}</p>
-<p class="small">{e(t(lang, "コード: MIT / 当社が生成した集計データ: CC BY 4.0。元データのライセンスは各ページの出典表記をご確認ください。", "Code: MIT. Our derived aggregates: CC BY 4.0. Upstream licences are named in each page's attribution."))}</p>
-</div>
-<div>
-<h4>{e(t(lang, "データ", "Data"))}</h4>
-<ul>
-<li><a href="/{lang}/bet-a/">{e(t(lang, "落札実績 統計", "Tender award statistics"))}</a></li>
-<li><a href="/{lang}/bet-c/">{e(t(lang, "法人番号 差分アーカイブ", "Registry diff archive"))}</a></li>
-<li><a href="/feeds/nta-diff.xml">{e(t(lang, "RSS フィード", "RSS feed"))}</a></li>
-<li><a href="/data/">{e(t(lang, "JSON エンドポイント", "JSON endpoints"))}</a></li>
-</ul>
-</div>
-<div>
-<h4>{e(t(lang, "運営", "Project"))}</h4>
-<ul>
-<li>{e(t(lang, "運営: ", "Operated by "))}<a href="{e(OPERATOR_URL)}" rel="noopener">{e(OPERATOR_NAME)}</a></li>
-<li><a href="{e(GITHUB_ORG)}" rel="noopener">GitHub</a></li>
-<li><a href="/{lang}/privacy.html">{e(t(lang, "プライバシー・方法論", "Privacy & methodology"))}</a></li>
-<li><a href="/{lang}/pricing.html">{e(t(lang, "料金（準備中）", "Pricing (coming soon)"))}</a></li>
-<li><a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(t(lang, "お問い合わせ（GitHub Issues のみ）", "Contact (GitHub Issues only)"))}</a></li>
-</ul>
-</div>
-</div></div></footer>
+<footer class="site"><div class="wrap">
+{attrib}
+<p>{e(disclaimer)}</p>
+<p class="foot-links">{links}</p>
+<p>{e(t(lang, "コード: MIT ／ 集計データ: CC BY 4.0", "Code: MIT / Derived aggregates: CC BY 4.0"))}</p>
+</div></footer>
 <script src="/assets/config.js"></script>
 <script src="/assets/intent.js" defer></script>
 </body>
@@ -988,40 +855,25 @@ def intent_button(lang: str, product: str, label_ja: str, label_en: str, quiet=F
             f"Allowed: {', '.join(INTENT_PRODUCTS)}"
         )
     done = t(lang, "記録しました", "Recorded")
-    why_ja = (
-        "クリック数のみを記録します。メールアドレスは収集しません（このサイトに入力欄はありません）。"
-        "更新は RSS / JSON フィードと MCP サーバーでお届けします。"
-    )
-    why_en = (
-        "This records a click and nothing else. We collect no email address — there is no "
-        "input field on this site. Updates arrive through the RSS/JSON feeds and the MCP server."
-    )
     return (
         '<button class="intent" type="button" data-intent="{p}" data-done="{d}"{q}>{l}</button>'
-        '<p class="intent-why">{w}</p>'
     ).format(
         p=e(product),
         d=e(done),
         q=' data-variant="quiet"' if quiet else "",
         l=e(t(lang, label_ja, label_en)),
-        w=e(t(lang, why_ja, why_en)),
     )
 
 
-def status_line(lang: str, bet_a_prov, bet_c, built_at: str):
-    return (
-        '<p class="status"><span><span class="dot"></span><b>{lbl}</b></span>'
-        "<span>{a_lbl}: <b>{a}</b></span>"
-        "<span>{c_lbl}: <b>{c}</b></span>"
-        "<span>{b_lbl}: <b>{b}</b></span></p>"
-    ).format(
-        lbl=e(t(lang, "データ最終更新", "Data last updated")),
-        a_lbl=e(t(lang, "落札実績", "Tender awards")),
-        a=e(bet_a_prov["retrieved_at"][:10]),
-        c_lbl=e(t(lang, "法人番号 差分", "Registry diff")),
-        c=e(bet_c["last_day"] or "—"),
-        b_lbl=e(t(lang, "ページ生成", "Site built")),
-        b=e(built_at[:10]),
+def intent_note(lang: str) -> str:
+    """The one factual line that goes with the notify buttons on a page."""
+    return '<p class="fine">{}{}</p>'.format(
+        icon("shield"),
+        e(t(
+            lang,
+            "ボタンは押された回数だけを数えます。連絡先は受け取りません。",
+            "The button counts clicks only. No contact details are taken.",
+        )),
     )
 
 
@@ -1030,10 +882,8 @@ def source_notices(lang: str):
 
     Source indication + licence name + modification notice. Both upstream
     licences require all three, so no surface that shows a figure derived
-    from them may carry fewer. The data pages spell the same three parts out
-    in their own words; every other surface uses these lines, and check()
-    fails the build on any generated file that shows a headline figure or an
-    attribution string without them.
+    from them may carry fewer; check() fails the build on any generated file
+    that shows a headline figure or an attribution string without them.
     """
     return [
         PPORTAL_ATTRIB
@@ -1054,12 +904,12 @@ def source_notices(lang: str):
 
 
 def attribution_block(lang: str, lines):
-    head = t(lang, "出典表記", "Attribution")
+    head = t(lang, "出典", "Sources")
     items = "".join(f"<div>{e(x)}</div>" for x in lines)
-    return f'<div class="attrib"><strong>{e(head)}</strong>{items}</div>'
+    return f'<div class="attrib"><b>{e(head)}</b>{items}</div>'
 
 
-def table(caption: str, headers, rows, aligns=None):
+def table(caption: str, headers, rows, aligns=None, cls=""):
     aligns = aligns or [""] * len(headers)
     th = "".join(
         '<th{}>{}</th>'.format(' class="n" scope="col"' if a == "n" else ' scope="col"', h)
@@ -1073,94 +923,49 @@ def table(caption: str, headers, rows, aligns=None):
         )
         body += f"<tr>{tds}</tr>"
     cap = f"<caption>{caption}</caption>" if caption else ""
+    klass = f' class="{cls}"' if cls else ""
     return (
-        f'<div class="tablewrap"><table>{cap}<thead><tr>{th}</tr></thead>'
+        f'<div class="tablewrap"><table{klass}>{cap}<thead><tr>{th}</tr></thead>'
         f"<tbody>{body}</tbody></table></div>"
     )
 
 
-def stat_grid(items):
+def kpis(items):
+    """A row of figures: [(value, label)]. Values are set in the data face."""
     cells = "".join(
-        '<div class="stat"><span class="k">{k}</span><span class="v">{v}</span>'
-        '<span class="u">{u}</span></div>'.format(k=e(k), v=e(v), u=e(u))
-        for k, v, u in items
+        f'<li><span class="v">{e(v)}</span><span class="k">{e(k)}</span></li>' for v, k in items
     )
-    return f'<div class="stats">{cells}</div>'
+    return f'<ul class="kpis">{cells}</ul>'
 
 
-# --------------------------------------------------------------------------
-# SVG bar chart (no JS, no chart library)
-# --------------------------------------------------------------------------
+def labels(items):
+    """Data caveats as short labels next to the figure, not paragraphs."""
+    return '<ul class="labels">' + "".join(f"<li>{e(x)}</li>" for x in items) + "</ul>"
 
 
-def bar_chart_svg(days, values, lang, height=190):
-    """Daily counts as a bar chart. Sized in a viewBox so it scales to any width."""
-    n = len(days)
-    if n == 0:
-        return ""
-    W, H = 720, height
-    pad_l, pad_r, pad_t, pad_b = 44, 8, 12, 34
-    plot_w = W - pad_l - pad_r
-    plot_h = H - pad_t - pad_b
-    vmax = max(values)
-    # round the axis top up to a nice number
-    step = 10 ** (len(str(int(vmax))) - 1)
-    top = int((vmax // step + 1) * step)
-    slot = plot_w / n
-    bw = max(2.0, slot * 0.72)
+def heat_scale(values):
+    """Sequential 青磁 classes h1..h6 by count sextile; h0 = no page.
 
-    bars = []
-    for i, (d, v) in enumerate(zip(days, values)):
-        h = plot_h * v / top
-        x = pad_l + i * slot + (slot - bw) / 2
-        y = pad_t + plot_h - h
-        label = t(lang, f"{d}: {v:,} 件", f"{d}: {v:,} records")
-        bars.append(
-            f'<rect class="bar" x="{x:.2f}" y="{y:.2f}" width="{bw:.2f}" height="{h:.2f}" '
-            f'rx="1"><title>{e(label)}</title></rect>'
-        )
+    Returns (class_of, legend) where legend is [(class, range text)].
+    """
+    vs = sorted(v for v in values if v and v > 0)
+    n = len(vs)
+    cuts = [vs[min(n - 1, (n * k) // 6)] for k in range(1, 6)] if n else [1] * 5
 
-    ticks = []
-    for frac in (0, 0.5, 1.0):
-        v = top * frac
-        y = pad_t + plot_h - plot_h * frac
-        cls = "axis" if frac == 0 else "baseline"
-        ticks.append(f'<line class="{cls}" x1="{pad_l}" y1="{y:.2f}" x2="{W - pad_r}" y2="{y:.2f}"/>')
-        ticks.append(
-            f'<text class="tick" x="{pad_l - 6}" y="{y + 3.5:.2f}" text-anchor="end">{int(v):,}</text>'
-        )
+    def cls(v):
+        if not v or v <= 0:
+            return "h0"
+        return "h" + str(1 + sum(1 for c in cuts if v >= c))
 
-    # x labels: first day of each month plus the last day
-    xlabels = []
-    seen_month = set()
-    for i, d in enumerate(days):
-        month = d[:7]
-        show = month not in seen_month or i == n - 1
-        if month not in seen_month:
-            seen_month.add(month)
-        if show:
-            x = pad_l + i * slot + slot / 2
-            anchor = "end" if i == n - 1 else "middle"
-            xlabels.append(
-                f'<text class="tick" x="{x:.2f}" y="{H - pad_b + 15:.2f}" '
-                f'text-anchor="{anchor}">{e(d[5:])}</text>'
-            )
-
-    title = t(
-        lang,
-        f"{days[0]} から {days[-1]} までの1日あたりの差分レコード数",
-        f"Registry diff records per publication day, {days[0]} to {days[-1]}",
-    )
-    return (
-        f'<svg viewBox="0 0 {W} {H}" role="img" preserveAspectRatio="xMidYMid meet" '
-        f'aria-label="{e(title)}"><title>{e(title)}</title>'
-        + "".join(ticks)
-        + "".join(bars)
-        + "".join(xlabels)
-        + f'<text class="tick" x="{pad_l - 6}" y="{pad_t - 2}" text-anchor="end">'
-        + e(t(lang, "件", "recs"))
-        + "</text></svg>"
-    )
+    bounds = [1] + cuts
+    legend = []
+    for i in range(6):
+        lo = bounds[i]
+        hi = bounds[i + 1] - 1 if i < 5 else None
+        if hi is not None and hi < lo:
+            continue
+        legend.append((f"h{i + 1}", f"{lo:,}+" if hi is None else f"{lo:,}–{hi:,}"))
+    return cls, legend
 
 
 # --------------------------------------------------------------------------
@@ -1168,212 +973,131 @@ def bar_chart_svg(days, values, lang, height=190):
 # --------------------------------------------------------------------------
 
 
+def bet_a_grid(bet_a_pages):
+    """(sectors sorted by slug, years, {(sector, fy): page}) for the heatmaps."""
+    years = sorted({p["fiscal_year"] for p in bet_a_pages})
+    sectors = sorted({p["sector"] for p in bet_a_pages}, key=lambda s: SECTORS[s][0])
+    by_key = {(p["sector"], p["fiscal_year"]): p for p in bet_a_pages}
+    return sectors, years, by_key
+
+
 def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
     path = f"/{lang}/"
     alt = "/en/" if lang == "ja" else "/ja/"
     fy_max = max(p["fiscal_year"] for p in bet_a_pages)
     fy_min = min(p["fiscal_year"] for p in bet_a_pages)
-    n_pages = len(bet_a_pages)
 
     title = t(
         lang,
-        "Deltakura（デルタ蔵）— 日本の公開データの履歴アーカイブ",
-        "Deltakura — an open-methodology archive of Japanese public-data histories",
+        "Deltakura（デルタ蔵）— 消える前に、蔵へ。",
+        "Deltakura — into the storehouse, before it disappears",
     )
     desc_ja = (
-        "方法論を公開した公開データアーカイブ。国の落札実績統計（FY2013–FY2026）と"
-        "国税庁 法人番号の日次差分を、出典とライセンスを明記して蓄積しています。"
-        "メールアドレスは一切集めません。更新は RSS / JSON / MCP で配信します。"
+        "国が公開し、やがて消すデータを毎晩保存するアーカイブ。"
+        f"国の落札実績統計（FY{fy_min}–FY{fy_max}）と、国税庁 法人番号の日次差分。RSS と JSON でも配信。"
     )
     desc_en = (
-        "An open-methodology archive of Japanese public-data histories: "
-        "national tender-award statistics (FY2013-FY2026) and the daily corporate-number registry "
-        "diff, each carrying its source and licence. No email is ever collected; updates ship as "
-        "RSS, JSON and MCP."
+        "An archive of Japanese public data that the state publishes and later deletes, saved every night: "
+        f"national tender-award statistics (FY{fy_min}-FY{fy_max}) and the daily corporate-registry diff. "
+        "Also as RSS and JSON."
     )
 
-    lede_ja = (
-        "国や公的機関が公開するデータの<strong>履歴</strong>を保存する、小さな独立プロジェクトです。"
-        "公開された瞬間のスナップショットは誰でも取れますが、消えた後の履歴は取り戻せません。"
-        "そこだけを、方法を全部公開したうえで積み上げています。"
-    )
-    lede_en = (
-        "A small independent project that keeps the <strong>histories</strong> of Japanese public "
-        "data. Anyone can take today's snapshot; nobody can go back for the part the publisher has "
-        "already deleted. That gap is the whole product, and the method behind it is public."
+    # mini heatmap for the tender-award card, from the same counts as /bet-a/
+    sectors, years, by_key = bet_a_grid(bet_a_pages)
+    cls_of, _legend = heat_scale(p["n_awards"] for p in bet_a_pages)
+    grid = [
+        [(by_key[(s, y)]["n_awards"] if (s, y) in by_key else 0) for y in years]
+        for s in sectors
+    ]
+
+    strip = charts.strip_figure(lang, bet_c["days"], bet_c["daily"], bet_c["total"])
+
+    facts = [
+        ("kura", f"{bet_c['total']:,}" + t(lang, "件", ""), t(lang, "法人番号の差分を保管", "registry-diff records kept")),
+        ("tag", f"{bet_a_prov['records']:,}" + t(lang, "件", ""), t(lang, "国の落札を集計", "national tender awards aggregated")),
+        ("moon", t(lang, "毎晩 03:30", "03:30 JST"), t(lang, "法人番号の差分を毎晩収集", "registry diff collected nightly")),
+    ]
+    facts_html = "".join(
+        f'<li>{icon(i)}<span><span class="v">{e(v)}</span><span class="k">{e(k)}</span></span></li>'
+        for i, v, k in facts
     )
 
-    products = []
+    cards = f"""<div class="cards">
+<article class="card">
+<div class="card-h">{icon("tag")}<h3>{e(t(lang, "国の落札実績", "National tender awards"))}</h3></div>
+{charts.heat_thumb(lang, grid, cls_of)}
+<p class="grow">{e(t(lang, f"どの府省が、何件、いくらで発注したか。FY{fy_min}–FY{fy_max}。", f"Which ministries buy, how often, at what prices. FY{fy_min}-FY{fy_max}."))}</p>
+<div class="act"><a class="btn primary" href="/{lang}/bet-a/">{e(t(lang, "統計を見る", "See the statistics"))}</a></div>
+</article>
+<article class="card">
+<div class="card-h">{icon("kura")}<h3>{e(t(lang, "法人番号の差分", "Corporate registry diff"))}</h3></div>
+{charts.spark_bars(lang, bet_c["days"], bet_c["daily"])}
+<p class="grow">{e(t(lang, "新設・移転・閉鎖。法人登記の毎日の変化。", "New companies, moves and closures, day by day."))}</p>
+<div class="act"><a class="btn" href="/{lang}/bet-c/">{e(t(lang, "アーカイブを見る", "Open the archive"))}</a></div>
+</article>
+<article class="card soon">
+<div class="card-h">{icon("hiring")}<h3>{e(t(lang, "採用開始インデックス", "Hiring first-seen index"))}</h3></div>
+<span class="soon-stamp">{e(t(lang, "準備中", "SOON"))}</span>
+<div class="grow"></div>
+<div class="act">{intent_button(lang, "bet_b_watchlist", "公開されたら知りたい", "Tell me when it opens")}</div>
+</article>
+</div>"""
 
-    # --- Bet A
-    products.append(
-        '<div class="card">'
-        + '<span class="tag live">{}</span>'.format(e(t(lang, "公開中", "Live")))
-        + "<h3>{}</h3>".format(
-            e(t(lang, "落札実績 統計（国の調達）", "Tender award statistics (national procurement)"))
-        )
-        + "<p>{}</p>".format(
-            e(
-                t(
-                    lang,
-                    f"調達ポータルの落札実績オープンデータから作った、府省セクター × 年度の統計 {n_pages} ページ。"
-                    f"FY{fy_min}–FY{fy_max}、{bet_a_prov['records']:,} 件の落札を集計しています。"
-                    "落札者名の一覧は作りません（統計のみ）。",
-                    f"{n_pages} statistics pages, one per purchasing sector and fiscal year, built from the "
-                    f"調達ポータル open award dataset: FY{fy_min}-FY{fy_max}, {bet_a_prov['records']:,} awards. "
-                    "Statistics only — no winner directory is built.",
-                )
-            )
-        )
-        + '<div class="spacer"></div>'
-        + '<p class="small"><a href="/{}/bet-a/">{}</a></p>'.format(
-            lang, e(t(lang, "統計を見る →", "Browse the statistics →"))
-        )
-        + intent_button(lang, "bet_a_report", "更新を受け取る", "Notify me")
-        + "</div>"
-    )
+    flow = f"""<ol class="flow">
+<li>{icon("gov")}<span><b>{e(t(lang, "国の公開データ", "Public data"))}</b><small>{e(t(lang, "調達ポータル・国税庁", "Procurement portal, National Tax Agency"))}</small></span></li>
+<li>{icon("moon")}<span><b>{e(t(lang, "自動で収集", "Collected automatically"))}</b></span></li>
+<li>{icon("eye-off")}<span><b>{e(t(lang, "個人名を除いて集計", "Personal names removed, then counted"))}</b></span></li>
+<li>{icon("kura")}<span><b>{e(t(lang, "蔵に保管", "Kept in the storehouse"))}</b></span></li>
+<li class="out"><span><b>{e(t(lang, "届け先", "Delivered as"))}</b></span><span class="chips"><span class="chip">{icon("page")}{e(t(lang, "サイト", "This site"))}</span><span class="chip">{icon("rss")}RSS</span><span class="chip">{icon("braces")}API・MCP</span></span></li>
+</ol>"""
 
-    # --- Bet C
-    products.append(
-        '<div class="card">'
-        + '<span class="tag live">{}</span>'.format(e(t(lang, "公開中", "Live")))
-        + "<h3>{}</h3>".format(
-            e(t(lang, "法人番号 差分アーカイブ", "Corporate registry diff archive"))
-        )
-        + "<p>{}</p>".format(
-            e(
-                t(
-                    lang,
-                    f"国税庁が 40 日で消す日次差分ファイルを、毎晩1回だけ取得して保存しています。"
-                    f"現在 {bet_c['n_files']} 日分・{bet_c['total']:,} レコード。法人のみで、個人の氏名は扱いません。",
-                    f"The National Tax Agency keeps its daily corporate-registry diff files for 40 days. "
-                    f"We fetch one file a night and keep them. {bet_c['n_files']} days and "
-                    f"{bet_c['total']:,} records so far. Corporations only — never an individual's name.",
-                )
-            )
-        )
-        + '<div class="spacer"></div>'
-        + '<p class="small"><a href="/{}/bet-c/">{}</a> · <a href="/feeds/nta-diff.xml">RSS</a></p>'.format(
-            lang, e(t(lang, "アーカイブを見る →", "Browse the archive →"))
-        )
-        + intent_button(lang, "bet_c_registry_diff", "更新を受け取る", "Notify me")
-        + "</div>"
-    )
+    nots = [
+        ("eye-off", t(lang, "個人名を扱いません", "No personal names")),
+        ("ledger", t(lang, "落札者の名簿を作りません", "No winner directory")),
+        ("mail-off", t(lang, "メールアドレスを集めません", "No email addresses collected")),
+        ("cookie-off", t(lang, "Cookie を使いません", "No cookies")),
+        ("tag", t(lang, "入札額の助言はしません", "No bidding advice")),
+    ]
+    tiles = "".join(f"<li>{icon(i)}<b>{e(x)}</b></li>" for i, x in nots)
 
-    # --- Bet B placeholder. The sources ARE cleared (reuse_allowed=Y in the
-    #     clearance matrix shipped with the collectors); what holds publication
-    #     back is the separate go-live approval, enforced by BET_B_LIVE=false.
-    #     Say that, because the matrix is in the same repository as this page.
-    products.append(
-        '<div class="card">'
-        + '<span class="tag soon">{}</span>'.format(e(t(lang, "準備中", "Not published")))
-        + "<h3>{}</h3>".format(
-            e(t(lang, "日本 採用開始インデックス", "Japan hiring first-seen index"))
-        )
-        + "<p>{}</p>".format(
-            e(
-                t(
-                    lang,
-                    "「どの企業が、いつ、日本で採用を始めたか」の初出日インデックス。"
-                    "取得元の利用条件は確認済みで、条件付きで再利用できることまでは分かっています。"
-                    "公開そのものが別途の承認事項のため、データは1件も公開していません。",
-                    "A first-seen index of which companies started hiring in Japan and when. "
-                    "The sources' reuse terms have been reviewed and permit reuse under conditions. "
-                    "Publication is a separate approval and has not been given, so not one record "
-                    "is published.",
-                )
-            )
-        )
-        + '<div class="spacer"></div>'
-        + '<p class="small faint">{}</p>'.format(
-            e(
-                t(
-                    lang,
-                    "状態: 利用条件は確認済み・公開は承認待ち（公開データなし）",
-                    "Status: source terms reviewed; publication pending approval, no data published",
-                )
-            )
-        )
-        + intent_button(lang, "bet_b_watchlist", "公開されたら知りたい", "Tell me when it opens")
-        + "</div>"
-    )
-
-    not_sold = t(
-        lang,
-        """<ul class="clean no">
-<li>個人（個人事業主を含む）の氏名・屋号の一覧。取り込み時点で匿名化しており、そもそも保有していません。</li>
-<li>落札者ディレクトリ。法人であっても、氏名で検索できる形のものは作りません。</li>
-<li>メールアドレスの収集、メール配信、営業メール。このサイトに入力欄はありません。</li>
-<li>「この金額で入札すべき」といった助言。統計は出しますが、税務・法務・行政手続の助言は行いません。</li>
-<li>公式データとしての保証。ここは非公式アーカイブです。</li>
-<li>クローラーのコード。MIT で公開しており、売り物ではありません。</li>
-</ul>""",
-        """<ul class="clean no">
-<li>A list of individuals, including sole proprietors. They are masked at ingestion, so we do not hold one.</li>
-<li>A winner directory. Not even for corporations, if it would be searchable by name.</li>
-<li>Email addresses, newsletters or outbound mail. There is no input field on this site.</li>
-<li>Advice such as "you should bid X". We publish statistics, not tax, legal or administrative advice.</li>
-<li>Any warranty that this is official data. It is an unofficial archive.</li>
-<li>The crawler code — it is MIT-licensed and public, not a product.</li>
-</ul>""",
-    )
-
-    sold = t(
-        lang,
-        """<ul class="clean yes">
-<li>消えた後の履歴。国税庁が 40 日で削除する差分を、削除後も参照できる形で保持します。</li>
-<li>動き続ける処理。毎晩の取得・正規化・出典付与を、利用者が運用せずに済む形にしています。</li>
-<li>検証できる方法論。収集コードも正規化済みデータも公開リポジトリにあります。</li>
-<li>機械向けの入口。RSS / JSON エンドポイント / MCP サーバーで、人間にもエージェントにも同じデータを返します。</li>
-</ul>""",
-        """<ul class="clean yes">
-<li>History after deletion: the diffs the National Tax Agency removes after 40 days, still readable here.</li>
-<li>A process that keeps running: nightly collection, normalisation and attribution that you never operate.</li>
-<li>A method you can check: the collector code and the normalised data are both in public repositories.</li>
-<li>A machine-facing door: RSS, JSON endpoints and an MCP server return the same data to people and to agents.</li>
-</ul>""",
-    )
-
-    channels = t(
-        lang,
-        f"""<p>更新のお知らせに<strong>メールアドレスは使いません</strong>。メールアドレスをお預かりしない方針のため、メールでの配信は行っていません。代わりに次の経路があります。</p>
-<ul class="clean">
-<li><a href="/feeds/nta-diff.xml">RSS フィード</a> — 法人番号 差分の週次サマリ。リーダーに登録するだけです。</li>
-<li><a href="/data/">JSON エンドポイント</a> — 各統計ページに対応する機械可読ファイル。</li>
-<li>MCP サーバー / npm パッケージ — 公開後、<a href="{GITHUB_ORG}" rel="noopener">GitHub</a> から辿れます（準備中）。</li>
-<li>各製品の「更新を受け取る」ボタン — クリック数だけを記録します。連絡先は取得しません。</li>
-</ul>""",
-        f"""<p>We do not use email for updates, ever: we never collect email addresses, so the channel does not exist here. Instead:</p>
-<ul class="clean">
-<li><a href="/feeds/nta-diff.xml">RSS feed</a> — weekly summary of the registry diff. Point a reader at it.</li>
-<li><a href="/data/">JSON endpoints</a> — a machine-readable file behind every statistics page.</li>
-<li>MCP server and npm package — linked from <a href="{GITHUB_ORG}" rel="noopener">GitHub</a> once published.</li>
-<li>The "Notify me" button on each product — it records a click and asks for no contact detail.</li>
-</ul>""",
-    )
+    doors = f"""<ul class="doors">
+<li>{icon("rss")}<span><a href="/feeds/nta-diff.xml">RSS</a><small>{e(t(lang, "法人番号の差分・週次", "Registry diff, weekly"))}</small></span></li>
+<li>{icon("braces")}<span><a href="/data/">{e(t(lang, "データファイル（JSON）", "Data files (JSON)"))}</a><small>{e(t(lang, "全ページと同じ数値", "The same numbers as every page"))}</small></span></li>
+<li>{icon("plug")}<span><a href="{e(GITHUB_ORG)}" rel="noopener">{e(t(lang, "MCP サーバー", "MCP server"))}</a><small>{e(t(lang, "準備中", "Coming soon"))}</small></span></li>
+</ul>"""
 
     body = f"""
-<h1>{e(t(lang, "消える前の日本の公開データを、方法ごと保存する", "Keeping Japanese public data before it disappears — method included"))}</h1>
-<p class="lede">{t(lang, lede_ja, lede_en)}</p>
-{status_line(lang, bet_a_prov, bet_c, built_at)}
-
-<h2>{e(t(lang, "3つのデータセット", "Three datasets"))}</h2>
-<div class="grid c3">{''.join(products)}</div>
-
-<h2>{e(t(lang, "売っているもの / 売っていないもの", "What we sell, and what we do not"))}</h2>
-<div class="grid c2">
-<div class="card"><h3>{e(t(lang, "提供するもの", "What is here"))}</h3>{sold}</div>
-<div class="card"><h3>{e(t(lang, "提供しないもの", "What we do NOT sell"))}</h3>{not_sold}</div>
+<div class="hero">
+<h1>{e(t(lang, "消える前に、蔵へ。", "Into the storehouse, before it disappears."))}</h1>
+<p class="sub">{e(t(lang, "国が公開し、やがて消すデータを、毎晩保存しています。", "Japan publishes this data, then deletes it. We save it every night."))}</p>
+{strip}
+<ul class="facts">{facts_html}</ul>
 </div>
 
-<h2>{e(t(lang, "更新の受け取り方（メールは使いません）", "How updates reach you (never by email)"))}</h2>
-{channels}
+<section class="sec" aria-labelledby="h-what">
+<h2 id="h-what">{e(t(lang, "何が見られるか", "What you can see"))}</h2>
+{cards}
+{intent_note(lang)}
+</section>
 
-<h2>{e(t(lang, "誰が運営しているのか", "Who runs this"))}</h2>
-<p>{e(t(lang, "Deltakura（デルタ蔵）は Sirevo が運営するデータプロジェクトです。検証できるものは全部公開しています。収集コード、正規化済みデータ、このサイトの生成スクリプト、匿名化ルール、出典とライセンス。", "Deltakura is a data project operated by Sirevo. We publish everything you would need to check the work: the collector code, the normalised data, the script that generates this site, the anonymisation rules, and the source and licence of every number."))}</p>
-<p><a href="{e(OPERATOR_URL)}" rel="noopener">{e(t(lang, "運営: Sirevo", "Operator: Sirevo"))}</a> · <a href="{e(GITHUB_ORG)}" rel="noopener">{e(t(lang, "GitHub でコードとデータを見る", "See the code and data on GitHub"))}</a> · <a href="/{lang}/privacy.html">{e(t(lang, "プライバシーと方法論", "Privacy and methodology"))}</a> · <a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(t(lang, "連絡先は GitHub Issues のみ", "Contact: GitHub Issues only"))}</a></p>
+<section class="sec" aria-labelledby="h-how">
+<h2 id="h-how">{e(t(lang, "仕組み", "How it works"))}</h2>
+{flow}
+</section>
 
-{attribution_block(lang, source_notices(lang))}
+<section class="sec" aria-labelledby="h-not">
+<h2 id="h-not">{e(t(lang, "しないこと", "What we do not do"))}</h2>
+<ul class="tiles">{tiles}</ul>
+</section>
+
+<section class="sec" aria-labelledby="h-dev">
+<h2 id="h-dev">{e(t(lang, "開発者・AIエージェントの方へ", "For developers and AI agents"))}</h2>
+{doors}
+</section>
+
+<section class="sec">
+<p class="operator"><span>{e(t(lang, "運営", "Operated by"))} <a href="{e(OPERATOR_URL)}" rel="noopener">{e(OPERATOR_NAME)}</a></span><a href="{e(GITHUB_ORG)}" rel="noopener">{e(t(lang, "コードとデータ（GitHub）", "Code and data (GitHub)"))}</a><a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(t(lang, "削除・訂正の依頼", "Removal and corrections"))}</a></p>
+</section>
 """
 
     jsonld = [
@@ -1391,8 +1115,8 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
                 "url": OPERATOR_URL,
                 "description": t(
                     lang,
-                    "日本の公開データの履歴を、方法論を公開したまま蓄積するアーカイブ Deltakura の運営者。",
-                    "Operator of Deltakura, an open-methodology archive of Japanese public-data histories.",
+                    "日本の公開データの履歴を保存するアーカイブ Deltakura の運営者。",
+                    "Operator of Deltakura, an archive of Japanese public-data histories.",
                 ),
             },
         }
@@ -1406,6 +1130,7 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
         body=body,
         alt_path=alt,
         jsonld=jsonld,
+        attribution=source_notices(lang),
     )
 
 
@@ -1417,217 +1142,133 @@ def bet_a_json_path(slug, fy):
     return f"/data/bet-a/{slug}-fy{fy}.json"
 
 
-BET_A_CAVEATS = {
-    "ja": [
-        (
-            "予定価格が公表されていないため、落札率は算出できません。",
-            "この出典（国の調達ポータル落札実績）は8列しかなく、予定価格はその中にありません。"
-            "落札率・参考価格を名乗る数字はこのデータからは作れません。",
-        ),
-        (
-            "都道府県は「落札者の登記上の所在地」であり、実際に業務が行われた場所ではありません。",
-            "元データに所在地の列は存在しません。法人番号を国税庁の登記情報に突き合わせて得た本店所在地です。"
-            "東京本社の企業が沖縄の案件を落札すれば東京都に計上されます。"
-            "この軸が答えるのは「どこの企業が国の契約を取っているか」です。",
-        ),
-        (
-            "セクターは「どの府省が買ったか」であり、業種ではありません。",
-            "元データに業種コードも商品分類もありません。"
-            "「防衛」は防衛省が発注したという意味で、落札者が防衛関連企業という意味ではありません。",
-        ),
-        (
-            "「不明」は個人事業主が集まる区分です。",
-            "法人番号を持たない落札者は取り込み時点で匿名化され、都道府県を持ちません。",
-        ),
-        (
-            "件数の少ないバケットは公開集計から除外しています。",
-            "匿名化された個人事業主が1〜2者しかいない 都道府県 × セクター × 年度 の区分は、"
-            "消去法での再識別を防ぐため全体を非公開にしています（全体で34バケット・49件）。",
-        ),
-        (
-            "FY2013–FY2015 は制度の立ち上げ期です。",
-            "FY2013 の全件ファイルに含まれるレコードは1件だけで、これは収集の失敗ではなく公表元のデータそのままです。"
-            "調達量の測定値として読まないでください。",
-        ),
-    ],
-    "en": [
-        (
-            "No 予定価格 is published, so there is no 落札率 here.",
-            "The source dataset has eight columns and a predicted price is not one of them. "
-            "Any 'award ratio' or 'reference price' product would have to come from elsewhere.",
-        ),
-        (
-            "Prefecture is the winner's registered address, not where the work happened.",
-            "The source has no location field at all. The prefecture comes from joining the corporate "
-            "number to the national registry, which gives the head office. A Tokyo-registered company "
-            "winning work in Okinawa counts as Tokyo. This axis answers 'whose companies win national "
-            "contracts', and it over-weights Tokyo the way any head-office measure does.",
-        ),
-        (
-            "The sector says who bought, not what was sold.",
-            "There is no industry code and no product classification in the source. 'Defense' means the "
-            "Ministry of Defense was the buyer, not that the supplier is a defence contractor.",
-        ),
-        (
-            "'Unknown' is where sole proprietors land.",
-            "A winner without a corporate number is masked at ingestion and therefore carries no prefecture.",
-        ),
-        (
-            "Thin buckets are suppressed from the public aggregate.",
-            "A prefecture x sector x year bucket holding only one or two masked individuals is dropped "
-            "entirely so that a rare sole proprietor cannot be re-identified by elimination "
-            "(34 buckets, 49 awards across the whole archive).",
-        ),
-        (
-            "FY2013-FY2015 is the system's ramp-up.",
-            "The FY2013 full-year file contains a single record. That is the publisher's own data, not a "
-            "collection failure; do not read those years as a measurement of procurement volume.",
-        ),
-    ],
-}
+def bet_a_labels(lang, page=None, *, any_estimated=False, suppressed=0):
+    """The Bet-A data caveats, as short labels (brief section 6).
 
-# Added only to a page whose quantiles could not be computed exactly (the
-# normalized award store was absent at build time).
-ESTIMATE_CAVEAT = {
-    "ja": (
-        "中央値・四分位は推定値です（†）。",
-        "ビルド時に1件単位の正規化済みデータが無かったため、集計済みバケットから推定しています。"
-        "各都道府県バケットの5点（最小・Q1・中央値・Q3・最大）を区分線形の分布とみなし、"
-        "件数で重み付けして合成した分布から求めた値です。実測値との比較では 1.5〜17% 高めに出ます。"
-        "件数・合計・最小・最大は正確な値です。",
-    ),
-    "en": (
-        "Median and quartiles on this page are estimated (†).",
-        "The per-award normalized store was not available at build time, so they are derived from "
-        "the pre-aggregated buckets: each prefecture bucket's five order statistics treated as a "
-        "piecewise-linear distribution, mixed by award count and inverted. Measured against the "
-        "exact figures this method runs 1.5-17% high. Counts, totals, minimum and maximum are exact.",
-    ),
-}
-
-SUPPRESSION_CAVEAT_PAGE = {
-    "ja": (
-        "下の都道府県表の合計は、上の件数より {n} 件少なくなります。",
-        "再識別防止のため非公開にしたバケットの分です。上の集計値はその {n} 件を含んだ正確な値、"
-        "表は非公開分を除いた内訳です。",
-    ),
-    "en": (
-        "The prefecture table below adds up to {n} fewer awards than the count above.",
-        "Those are the awards in suppressed buckets. The figures above include them and are exact; "
-        "the table is the breakdown with the suppressed buckets removed.",
-    ),
-}
-
-
-def bet_a_caveats(lang, page=None, any_estimated=False):
-    items = list(BET_A_CAVEATS[lang])
+    These are correctness statements, not explanations: each says what an
+    axis or a figure IS. The full method lives in the JSON twin and on the
+    privacy page.
+    """
+    items = [
+        t(lang, "セクター = 発注した府省", "Sector = the ministry that bought"),
+        t(lang, "所在地 = 落札者の本店所在地", "Prefecture = winner's registered head office"),
+        t(lang, "不明 = 匿名化した個人事業主", "Unknown = masked sole proprietors"),
+        t(lang, "予定価格: 非公表", "Predicted price: not published"),
+    ]
     estimated = (not page["quantiles_exact"]) if page is not None else any_estimated
     if estimated:
-        items.insert(3, ESTIMATE_CAVEAT[lang])
-    if page is not None and page["n_awards_suppressed"] > 0:
-        head, body = SUPPRESSION_CAVEAT_PAGE[lang]
-        n = f"{page['n_awards_suppressed']:,}"
-        items.insert(4 if estimated else 3, (head.format(n=n), body.format(n=n)))
+        items.append(t(lang, "† 中央値・四分位は推定値", "† median and quartiles are estimates"))
+    n_sup = page["n_awards_suppressed"] if page is not None else suppressed
+    if n_sup:
+        items.append(
+            t(lang, f"都道府県の内訳から除外: {n_sup:,}件（少数区分）", f"Held out of the prefecture breakdown: {n_sup:,} (small buckets)")
+        )
+    if page is None or page["fiscal_year"] <= 2015:
+        items.append(t(lang, "FY2013–2015 = 公表の立ち上げ期", "FY2013-2015 = the publisher's ramp-up"))
     return items
 
 
-def caveat_block(lang, items):
-    inner = "".join(
-        f"<p><strong>{e(h)}</strong> {e(b)}</p>" for h, b in items
-    )
-    head = t(lang, "この数字を使う前に", "Read this before using these numbers")
-    return f'<div class="note"><p><strong>{e(head)}</strong></p>{inner}</div>'
+BET_A_ATTRIB = {
+    "ja": [
+        PPORTAL_ATTRIB + "（政府標準利用規約 第2.0版。加工して利用しています。）",
+        NTA_ATTRIB + "（公共データ利用規約 第1.0版。落札者の登記所在地の突合にのみ使用）",
+    ],
+    "en": [
+        PPORTAL_ATTRIB + " (政府標準利用規約 v2.0; used in modified form.)",
+        NTA_ATTRIB + " (公共データ利用規約 v1.0; used only to resolve the winner's registered prefecture)",
+    ],
+}
 
 
 def build_bet_a_index(lang, pages, bet_a_prov, built_at):
     path = f"/{lang}/bet-a/"
     alt = f"/{'en' if lang == 'ja' else 'ja'}/bet-a/"
 
-    years = sorted({p["fiscal_year"] for p in pages})
-    by_sector = collections.OrderedDict()
-    for p in pages:
-        by_sector.setdefault(p["sector"], {})[p["fiscal_year"]] = p
+    sectors, years, by_key = bet_a_grid(pages)
+    cls_of, legend = heat_scale(p["n_awards"] for p in pages)
 
-    # grid: one row per sector, one column per fiscal year
-    headers = [t(lang, "セクター（発注元府省）", "Sector (purchasing ministry)")] + [
-        f"FY{y}" for y in years
-    ] + [t(lang, "合計", "Total")]
-    aligns = [""] + ["n"] * len(years) + ["n"]
-    rows = []
-    for sector, ymap in sorted(by_sector.items(), key=lambda kv: SECTORS[kv[0]][0]):
-        slug, en = SECTORS[sector]
-        label = e(sector) if lang == "ja" else f"{e(en)}<br><span class='faint small'>{e(sector)}</span>"
-        cells = [label]
-        total = 0
+    row_totals = {s: sum(by_key[(s, y)]["n_awards"] for y in years if (s, y) in by_key) for s in sectors}
+    max_total = max(row_totals.values()) or 1
+
+    head = "".join(f'<th scope="col">{y}</th>' for y in years)
+    head = (
+        f'<thead><tr><th scope="col">{e(t(lang, "発注した府省", "Buying ministry"))}</th>{head}'
+        f'<th scope="col">{e(t(lang, "合計", "Total"))}</th></tr></thead>'
+    )
+    body_rows = []
+    for s in sectors:
+        slug, en = SECTORS[s]
+        name = e(s) if lang == "ja" else e(en)
+        cells = []
         for y in years:
-            p = ymap.get(y)
+            p = by_key.get((s, y))
             if not p:
-                cells.append('<span class="faint">—</span>')
+                cells.append('<td class="h0"><span class="x">—</span></td>')
                 continue
-            total += p["n_awards"]
+            n = p["n_awards"]
+            label = t(lang, f"{s} {y}年度: {n:,}件", f"{en}, FY{y}: {n:,} awards")
             cells.append(
-                '<a href="{}">{}</a>'.format(e(bet_a_page_path(lang, slug, y)), num(p["n_awards"]))
+                f'<td class="{cls_of(n)}"><a href="{e(bet_a_page_path(lang, slug, y))}" '
+                f'aria-label="{e(label)}">{num(n)}</a></td>'
             )
-        cells.append(f"<strong>{num(total)}</strong>")
-        rows.append(cells)
+        tot = row_totals[s]
+        cells.append(
+            f'<td class="tot">{num(tot)}<span class="tbar" aria-hidden="true">'
+            f'<i class="{charts.wcls(tot, max_total)}"></i></span></td>'
+        )
+        body_rows.append(f'<tr><th scope="row">{name}</th>{"".join(cells)}</tr>')
 
-    totals = [t(lang, "合計", "Total")]
-    grand = 0
-    for y in years:
-        s = sum(p["n_awards"] for p in pages if p["fiscal_year"] == y)
-        grand += s
-        totals.append(f"<strong>{num(s)}</strong>")
-    totals.append(f"<strong>{num(grand)}</strong>")
-    rows.append(totals)
-
-    caption = t(
-        lang,
-        f"年度 × セクター の落札件数。セルをクリックすると、その年度・セクターの統計ページに移動します（全 {len(pages)} ページ）。",
-        f"Award counts by fiscal year and purchasing sector. Each cell links to that sector-year's "
-        f"statistics page ({len(pages)} pages in total).",
+    col_tot = [sum(by_key[(s, y)]["n_awards"] for s in sectors if (s, y) in by_key) for y in years]
+    foot = "".join(f"<td>{num(v)}</td>" for v in col_tot)
+    foot = (
+        f'<tfoot><tr><th scope="row">{e(t(lang, "合計", "Total"))}</th>{foot}'
+        f'<td class="tot">{num(sum(col_tot))}</td></tr></tfoot>'
+    )
+    heat = (
+        f'<div class="tablewrap"><table class="heat">'
+        f'<caption>{e(t(lang, "年度 × 発注した府省の落札件数。色が濃いほど件数が多い。数字を押すと詳細へ。", "Awards by fiscal year and buying ministry. Darker = more awards. Each number opens its page."))}</caption>'
+        f'{head}<tbody>{"".join(body_rows)}</tbody>{foot}</table></div>'
+    )
+    scale = '<ul class="scale" aria-label="{}">{}</ul>'.format(
+        e(t(lang, "色の凡例（件数）", "Colour legend (awards)")),
+        "".join(f'<li class="{c}">{e(r)}</li>' for c, r in legend),
     )
 
     title = t(
         lang,
-        "国の落札実績 統計 — 年度 × 発注府省セクター | Deltakura",
-        "Japanese national tender awards — statistics by fiscal year and purchasing sector | Deltakura",
+        "国の落札実績 統計 — 年度 × 発注府省 | Deltakura",
+        "Japanese national tender awards — by fiscal year and buying ministry | Deltakura",
     )
     desc_ja = (
-        f"調達ポータルの落札実績オープンデータ {bet_a_prov['records']:,} 件を、年度 × 発注府省セクターで集計した "
-        f"{len(pages)} ページの統計索引。件数・落札価格の中央値と四分位・落札者所在地の上位都道府県。"
-        "予定価格は公表されていないため落札率は含みません。"
+        f"調達ポータルの落札実績 {bet_a_prov['records']:,} 件を、年度 × 発注府省で集計した "
+        f"{len(pages)} ページの統計。件数、落札価格の中央値と四分位、落札者の所在地。"
     )
     desc_en = (
-        f"Index of {len(pages)} statistics pages built from {bet_a_prov['records']:,} Japanese national "
-        "procurement awards: counts, median and quartile award prices, and the top prefectures of "
-        "registered winners, by fiscal year and purchasing sector. No award ratio: the source publishes "
-        "no predicted price."
+        f"{len(pages)} statistics pages built from {bet_a_prov['records']:,} Japanese national "
+        "procurement awards: counts, median and quartile award prices, and where the winners are "
+        "registered, by fiscal year and buying ministry."
     )
 
     body = f"""
-<h1>{e(t(lang, "国の落札実績 統計", "National tender award statistics"))}</h1>
-<p class="lede">{e(t(lang, "調達ポータルが公開している国の落札実績オープンデータ（FY" + str(min(years)) + "–FY" + str(max(years)) + "、" + f"{bet_a_prov['records']:,}" + " 件）を、年度と発注府省セクターで集計したものです。落札者名の一覧は作らず、統計だけを公開します。", "Built from the open award dataset published by 調達ポータル (FY" + str(min(years)) + "-FY" + str(max(years)) + ", " + f"{bet_a_prov['records']:,}" + " awards), aggregated by fiscal year and purchasing sector. Statistics only; no winner directory is built."))}</p>
-
-{stat_grid([
-    (t(lang, "集計した落札件数", "Awards aggregated"), f"{bet_a_prov['records']:,}", t(lang, "FY" + str(min(years)) + "–FY" + str(max(years)), "FY" + str(min(years)) + "-FY" + str(max(years)))),
-    (t(lang, "統計ページ", "Statistics pages"), f"{len(pages)}", t(lang, "年度 × セクター", "fiscal year x sector")),
-    (t(lang, "セクター", "Sectors"), f"{len(by_sector)}", t(lang, "発注府省から導出", "derived from the buying ministry")),
-    (t(lang, "内訳を非公開にした件数", "Held back from breakdowns"), f"{bet_a_prov['suppressed']:,}", t(lang, "再識別防止のため", "to prevent re-identification")),
+<h1 class="title">{e(t(lang, "国の落札実績", "National tender awards"))}</h1>
+<p class="sub">{e(t(lang, f"どの府省が、何件発注したか。FY{min(years)}–FY{max(years)}。", f"Which ministries buy, and how often. FY{min(years)}-FY{max(years)}."))}</p>
+{kpis([
+    (f"{bet_a_prov['records']:,}", t(lang, "集計した落札", "awards aggregated")),
+    (f"{len(pages)}", t(lang, "統計ページ", "statistics pages")),
+    (f"{len(sectors)}", t(lang, "府省セクター", "ministry sectors")),
+    (f"{len(years)}", t(lang, "年度", "fiscal years")),
 ])}
+<div class="act">{intent_button(lang, "bet_a_report", "更新を受け取る", "Notify me")}</div>
+{intent_note(lang)}
 
-{table(caption, headers, rows, aligns)}
+<section class="sec" aria-labelledby="h-heat">
+<h2 id="h-heat">{icon("tag")}{e(t(lang, "年度 × 府省", "Year x ministry"))}</h2>
+{heat}
+{scale}
+{labels(bet_a_labels(lang, any_estimated=any(not p["quantiles_exact"] for p in pages), suppressed=bet_a_prov["suppressed"]))}
+</section>
 
-{caveat_block(lang, bet_a_caveats(lang, any_estimated=any(not p["quantiles_exact"] for p in pages)))}
-
-<h2>{e(t(lang, "機械向け", "For machines"))}</h2>
-<p>{e(t(lang, "各統計ページには同じ内容の JSON があります。索引は次のとおりです。", "Every statistics page has a JSON twin. The index lists them all."))}</p>
-<pre><code>GET {e(BASE_URL)}/data/bet-a/index.json
-GET {e(BASE_URL)}/data/bet-a/&lt;sector-slug&gt;-fy&lt;year&gt;.json</code></pre>
-
-{attribution_block(lang, [
-    PPORTAL_ATTRIB + t(lang, "（政府標準利用規約 第2.0版。加工して利用しています。）", " (政府標準利用規約 v2.0; used in modified form.)"),
-    NTA_ATTRIB + t(lang, "（公共データ利用規約 第1.0版。落札者の登記所在地の突合にのみ使用）", " (公共データ利用規約 v1.0; used only to resolve the winner's registered prefecture)"),
-])}
+<p class="fine">{icon("braces")}<a href="/data/bet-a/index.json">{e(t(lang, "データファイル（JSON）", "Data file (JSON)"))}</a></p>
 """
 
     jsonld = [
@@ -1655,6 +1296,7 @@ GET {e(BASE_URL)}/data/bet-a/&lt;sector-slug&gt;-fy&lt;year&gt;.json</code></pre
         alt_path=alt,
         jsonld=jsonld,
         is_data_page=True,
+        attribution=BET_A_ATTRIB[lang],
     )
 
 
@@ -1673,7 +1315,7 @@ def build_bet_a_page(lang, page, years_for_sector, bet_a_prov, built_at):
     mean = page["amount_sum_jpy"] / page["n_awards"] if page["n_awards"] else 0
 
     headers = [
-        t(lang, "都道府県（落札者の登記所在地）", "Prefecture (winner's registered address)"),
+        t(lang, "都道府県（本店所在地）", "Prefecture (registered)"),
         t(lang, "件数", "Awards"),
         t(lang, "構成比", "Share"),
         t(lang, "中央値", "Median"),
@@ -1684,19 +1326,20 @@ def build_bet_a_page(lang, page, years_for_sector, bet_a_prov, built_at):
         t(lang, "匿名化", "Masked"),
     ]
     aligns = ["", "n", "n", "n", "n", "n", "n", "n", "n"]
+
+    def pref_name(b):
+        if b["prefecture"] == "不明":
+            return t(lang, "不明（個人事業主）", "Unknown (sole proprietors)")
+        if lang == "en":
+            return PREF_EN.get(b["prefecture_code"], b["prefecture"])
+        return b["prefecture"]
+
     rows = []
     for b in page["buckets"]:
-        name = b["prefecture"]
-        if lang == "en":
-            name = PREF_EN.get(b["prefecture_code"], b["prefecture"])
-            if b["prefecture"] == "不明":
-                name = "Unknown (masked sole proprietors)"
-        elif b["prefecture"] == "不明":
-            name = "不明（匿名化された個人事業主）"
         share = b["n_awards"] / page["n_awards_in_table"] if page["n_awards_in_table"] else 0
         rows.append(
             [
-                e(name),
+                e(pref_name(b)),
                 num(b["n_awards"]),
                 pct(share),
                 yen(b["amount_median_jpy"]),
@@ -1707,31 +1350,6 @@ def build_bet_a_page(lang, page, years_for_sector, bet_a_prov, built_at):
                 num(b["n_masked_individual"]),
             ]
         )
-
-    table_note_ja = (
-        f"合計 {page['n_awards_in_table']:,} 件"
-        + (
-            f"（上の {page['n_awards']:,} 件のうち、再識別防止で非公開にした {page['n_awards_suppressed']:,} 件を除く）"
-            if page["n_awards_suppressed"]
-            else ""
-        )
-        + "。構成比はこの表の合計に対する割合です。"
-    )
-    table_note_en = (
-        f"{page['n_awards_in_table']:,} awards"
-        + (
-            f" — the {page['n_awards']:,} above minus {page['n_awards_suppressed']:,} in suppressed buckets"
-            if page["n_awards_suppressed"]
-            else ""
-        )
-        + ". Shares are of this table's total."
-    )
-    caption = t(
-        lang,
-        "落札者の登記上の所在地別。" + table_note_ja + "各行の中央値・四分位はその都道府県内の正確な値です。",
-        "By the winner's registered prefecture. " + table_note_en
-        + " Each row's median and quartiles are exact within that prefecture.",
-    )
 
     top = page["buckets"][:5]
     top_txt = "、".join(
@@ -1757,51 +1375,76 @@ def build_bet_a_page(lang, page, years_for_sector, bet_a_prov, built_at):
     desc_ja = (
         f"{fy}年度に{page['sector']}系の府省が発注した国の調達 {page['n_awards']:,} 件の落札統計。"
         f"落札価格の中央値 {yen(page['amount_median_jpy'])}、合計 {yen(page['amount_sum_jpy'])}。"
-        f"落札者の登記所在地上位は {top_txt}。予定価格が非公表のため落札率は含みません。"
+        f"落札者の本店所在地の上位は {top_txt}。"
     )
     desc_en = (
         f"Statistics for {page['n_awards']:,} FY{fy} Japanese national procurement awards bought by "
         f"{page['sector_en'].lower()} bodies: median award price {yen(page['amount_median_jpy'])}, "
-        f"total {yen(page['amount_sum_jpy'])}, top registered winner prefectures {top_txt}. "
-        "No award ratio — the source publishes no predicted price."
+        f"total {yen(page['amount_sum_jpy'])}, top registered winner prefectures {top_txt}."
     )
 
-    ratio_note = t(
-        lang,
-        "落札率: 算出不可（予定価格が公表されていないため）",
-        "Award ratio: not available (no predicted price is published)",
+    top8 = page["buckets"][:8]
+    bars = charts.hbars(
+        [(e(pref_name(b)), b["n_awards"]) for b in top8],
+        total=page["n_awards_in_table"],
     )
+    box = charts.box_plot(
+        lang,
+        page["amount_min_jpy"],
+        page["amount_q1_jpy"],
+        page["amount_median_jpy"],
+        page["amount_q3_jpy"],
+        page["amount_max_jpy"],
+        estimated=bool(dagger),
+    )
+    five = "".join(
+        f'<li><span class="k">{e(k)}</span><span class="v">{e(v)}</span></li>'
+        for k, v in (
+            (t(lang, "最小", "Min"), yen(page["amount_min_jpy"])),
+            (t(lang, "第1四分位", "Q1") + dagger, yen(page["amount_q1_jpy"])),
+            (t(lang, "中央値", "Median") + dagger, yen(page["amount_median_jpy"])),
+            (t(lang, "第3四分位", "Q3") + dagger, yen(page["amount_q3_jpy"])),
+            (t(lang, "最大", "Max"), yen(page["amount_max_jpy"])),
+        )
+    )
+    all_labels = bet_a_labels(lang, page)
+    price_labels = [x for x in all_labels if x.startswith(("予定価格", "Predicted", "†"))]
+    pref_labels = [x for x in all_labels if x.startswith(("所在地", "Prefecture =", "不明", "Unknown", "都道府県の内訳", "Held out"))]
+    page_labels = [x for x in all_labels if x not in price_labels and x not in pref_labels]
 
     body = f"""
-<p class="small muted"><a href="/{lang}/bet-a/">{e(t(lang, "落札実績 統計", "Tender award statistics"))}</a> / {e(sector_label)} / {e(fy_label)}</p>
-<h1>{e(sector_label)} · {e(fy_label)}</h1>
-<p class="lede">{e(t(lang, f"{fy}年度に{page['sector']}系の府省が発注した国の調達契約 {page['n_awards']:,} 件の落札統計です。セクターは「どの府省が買ったか」であり、業種ではありません。", f"Statistics for the {page['n_awards']:,} national procurement contracts bought by {page['sector_en'].lower()} bodies in FY{fy}. The sector says who bought, not what was sold."))}</p>
+<p class="crumb"><a href="/{lang}/bet-a/">{e(t(lang, "国の落札実績", "National tender awards"))}</a> / {e(sector_label)}</p>
+<h1 class="title">{e(sector_label)} · {e(fy_label)}</h1>
+{labels(page_labels)}
 <nav class="yearnav" aria-label="{e(t(lang, "年度", "Fiscal year"))}">{yearnav}</nav>
-
-{stat_grid([
-    (t(lang, "落札件数", "Awards"), num(page["n_awards"]), t(lang, f"{page['n_buckets']} 都道府県区分", f"across {page['n_buckets']} prefecture buckets")),
-    (t(lang, "落札価格 中央値", "Median award price") + dagger, yen(page["amount_median_jpy"]), t(lang, f"四分位 {yen(page['amount_q1_jpy'])} – {yen(page['amount_q3_jpy'])}", f"Q1-Q3 {yen(page['amount_q1_jpy'])} - {yen(page['amount_q3_jpy'])}")),
-    (t(lang, "落札総額", "Total awarded"), yen(page["amount_sum_jpy"]), t(lang, f"平均 {yen(mean)}", f"mean {yen(mean)}")),
-    (t(lang, "最小 / 最大", "Min / max"), yen(page["amount_min_jpy"]), t(lang, f"最大 {yen(page['amount_max_jpy'])}", f"max {yen(page['amount_max_jpy'])}")),
+{kpis([
+    (num(page["n_awards"]), t(lang, "落札件数", "awards")),
+    (yen(page["amount_median_jpy"]) + dagger, t(lang, "落札価格の中央値", "median award price")),
+    (yen(page["amount_sum_jpy"]), t(lang, "落札総額", "total awarded")),
+    (yen(mean), t(lang, "平均", "mean")),
 ])}
 
-<p class="small muted">{e(t(lang, "落札者の内訳: 法人 ", "Winner composition: "))}{num(page['n_corporate'])}{e(t(lang, " 者 / 匿名化された個人事業主 ", " corporate winners / "))}{num(page['n_masked_individual'])}{e(t(lang, " 者。", " masked sole proprietors."))}
-{" " + e(ratio_note)}{(" · " + e(t(lang, "†中央値・四分位は推定値（下記参照）", "† median and quartiles are estimated, see below"))) if dagger else ""}</p>
+<section class="sec" aria-labelledby="h-dist">
+<h2 id="h-dist">{icon("tag")}{e(t(lang, "落札価格の分布", "Award prices"))}</h2>
+<figure class="fig">
+{box}
+<figcaption>{e(t(lang, "箱 = 第1〜第3四分位、線 = 中央値、ひげ = 最小〜最大。対数目盛。", "Box = Q1 to Q3, line = median, whiskers = min to max. Log scale."))}</figcaption>
+<ul class="five">{five}</ul>
+</figure>
+{labels(price_labels)}
+</section>
 
-<h2>{e(t(lang, "落札者の所在地上位", "Top prefectures of registered winners"))}</h2>
-<p>{e(t(lang, "件数の多い順。ここでいう所在地は落札者の本店登記地であり、業務が行われた場所ではありません。", "Ordered by award count. 'Prefecture' is where the winner is registered, not where the work was done."))}</p>
-{table(caption, headers, rows, aligns)}
+<section class="sec" aria-labelledby="h-pref">
+<h2 id="h-pref">{icon("gov")}{e(t(lang, "落札者の所在地（上位）", "Where the winners are registered (top)"))}</h2>
+{bars}
+{labels(pref_labels)}
+<details>
+<summary>{e(t(lang, f"都道府県別の表（{page['n_buckets']}区分）", f"Full prefecture table ({page['n_buckets']} buckets)"))}</summary>
+{table("", headers, rows, aligns)}
+</details>
+</section>
 
-{caveat_block(lang, bet_a_caveats(lang, page))}
-
-<h2>{e(t(lang, "この数字を機械で読む", "Read these numbers with a machine"))}</h2>
-<pre><code>GET {e(BASE_URL + json_url)}</code></pre>
-<p class="small">{e(t(lang, "ページに表示されている値と同一の内容に、算出方法と出典・ライセンスを添えて返します。", "Returns exactly the values on this page, plus the method, the source and the licence."))}</p>
-
-{attribution_block(lang, [
-    PPORTAL_ATTRIB + t(lang, "（政府標準利用規約 第2.0版。加工して利用しています。）", " (政府標準利用規約 v2.0; used in modified form.)"),
-    NTA_ATTRIB + t(lang, "（落札者の登記所在地の突合にのみ使用）", " (used only to resolve the winner's registered prefecture)"),
-])}
+<p class="fine">{icon("braces")}<a href="{e(json_url)}">{e(t(lang, "データファイル（JSON）", "Data file (JSON)"))}</a></p>
 """
 
     dataset = {
@@ -1969,6 +1612,7 @@ def build_bet_a_page(lang, page, years_for_sector, bet_a_prov, built_at):
             alt_path=alt,
             jsonld=[dataset],
             is_data_page=True,
+            attribution=BET_A_ATTRIB[lang],
         ),
         payload,
     )
@@ -1981,124 +1625,98 @@ def build_bet_c(lang, bet_c, built_at):
     values = [bet_c["daily"][d] for d in days]
     avg = sum(values) / len(values) if values else 0
 
-    chart = bar_chart_svg(days, values, lang)
+    chart = charts.daily_chart(lang, days, values)
+    strip = charts.strip_figure(lang, days, bet_c["daily"], bet_c["total"])
 
-    proc_rows = []
-    for code, n in sorted(bet_c["process"].items(), key=lambda kv: -kv[1]):
-        ja, en = PROCESS_CODES.get(code, (f"コード {code}", f"code {code}"))
-        proc_rows.append(
-            [
-                f"<code>{e(code)}</code> {e(ja if lang == 'ja' else en)}",
-                num(n),
-                pct(n / bet_c["total"]),
-            ]
-        )
-    kind_rows = []
-    for code, n in sorted(bet_c["kinds"].items(), key=lambda kv: -kv[1]):
-        ja, en = KIND_CODES.get(code, (f"コード {code}", f"code {code}"))
-        kind_rows.append(
-            [
-                f"<code>{e(code)}</code> {e(ja if lang == 'ja' else en)}",
-                num(n),
-                pct(n / bet_c["total"]),
-            ]
-        )
+    def code_rows(counts, names):
+        out = []
+        for code, n in sorted(counts.items(), key=lambda kv: -kv[1]):
+            ja, en = names.get(code, (f"コード {code}", f"code {code}"))
+            out.append((e(ja if lang == "ja" else en), n))
+        return out
+
+    proc_bars = charts.hbars(code_rows(bet_c["process"], PROCESS_CODES), total=bet_c["total"])
+    kind_bars = charts.hbars(code_rows(bet_c["kinds"], KIND_CODES), total=bet_c["total"])
 
     schema_rows = [
         [
             f"<code>{e(col)}</code>",
             e(ja if lang == "ja" else en),
-            f'<span class="faint">{e(sample) if sample else "—"}</span>',
+            f"{e(sample) if sample else '—'}",
         ]
         for col, ja, en, sample in NTA_SCHEMA
     ]
 
-    why_ja = """<p>国税庁の法人番号公表サイトは、登記の変更を1日1本の差分ファイルで出します。そのファイルは<strong>約40日で消えます</strong>。全件ファイルは毎月出ますが、それは「いまの状態」であって「いつ何が変わったか」ではありません。つまり、</p>
-<ul class="clean">
-<li>40日より前に「どの法人がいつ設立されたか」「いつ本店を移したか」「いつ登記記録が閉鎖されたか」は、取り直せません。</li>
-<li>スナップショットを何枚並べても、間に起きた変更は復元できません（同じ日に2回変われば1回に見えます）。</li>
-<li>だから、毎晩1回・約130KB の取得を、途切れさせずに続けることそのものが資産になります。</li>
-</ul>
-<p>このアーカイブは、その取得を続けた結果です。欠けた日は欠けたと表示します。</p>"""
-    why_en = """<p>The National Tax Agency publishes one diff file per working day and <strong>deletes it after about 40 days</strong>. A monthly full dump exists, but it describes the present state, not when each thing changed. So:</p>
-<ul class="clean">
-<li>Beyond the 40-day window, when a company was registered, when it moved its head office, and when its registry record was closed cannot be fetched again.</li>
-<li>Stacking snapshots does not recover it: two changes inside one interval look like one.</li>
-<li>Which makes one 130 KB request a night, never missed, the entire asset.</li>
-</ul>
-<p>This archive is the result of making that request. Missing days are shown as missing.</p>"""
-
-    gaps_ja = (
-        "差分ファイルは土日・祝日・12/29〜1/3 には作られません。"
-        "その日が欠けているのは収集失敗ではなく公表元の暦です。"
-    )
-    gaps_en = (
-        "No diff file is produced on weekends, public holidays or 12/29-01/03. "
-        "A missing day there is the publisher's calendar, not a collection failure."
-    )
-
     title = t(
         lang,
-        "法人番号 差分アーカイブ — 40日で消える日次差分を保存する | Deltakura",
-        "Corporate registry diff archive — keeping the daily file that vanishes in 40 days | Deltakura",
+        "法人番号の差分アーカイブ — 40日で消える日次差分を保管 | Deltakura",
+        "Corporate registry diff archive — the daily file that vanishes in 40 days | Deltakura",
     )
     desc_ja = (
-        f"国税庁 法人番号公表サイトが約40日で削除する日次差分ファイルを、毎晩1回取得して保存しています。"
-        f"現在 {bet_c['n_files']} 日分・{bet_c['total']:,} レコード（{bet_c['first_day']}〜{bet_c['last_day']}）。"
-        "対象は法人のみで、個人の氏名は一切扱いません。週次 RSS と JSON で配信。"
+        f"国税庁 法人番号公表サイトが約40日で削除する日次差分を、毎晩保管しています。"
+        f"{bet_c['n_files']} 日分・{bet_c['total']:,} レコード（{bet_c['first_day']}〜{bet_c['last_day']}）。"
+        "法人のみ。週次 RSS と JSON。"
     )
     desc_en = (
-        f"The National Tax Agency deletes its daily corporate-registry diff after about 40 days. We fetch "
-        f"one file a night and keep it: {bet_c['n_files']} days and {bet_c['total']:,} records so far "
-        f"({bet_c['first_day']} to {bet_c['last_day']}). Corporations only, never an individual's name. "
-        "Weekly RSS and JSON."
+        f"The National Tax Agency deletes its daily corporate-registry diff after about 40 days. We keep "
+        f"every file: {bet_c['n_files']} days and {bet_c['total']:,} records "
+        f"({bet_c['first_day']} to {bet_c['last_day']}). Corporations only. Weekly RSS and JSON."
     )
 
+    points = [
+        ("cal40", t(lang, "公式に残るのは直近40日分", "Upstream keeps only the last 40 days")),
+        ("moon", t(lang, "毎晩1回取得し、全日を保管", "Fetched nightly; every day kept")),
+        ("eye-off", t(lang, "法人のみ。個人の氏名は扱いません", "Corporations only; no personal names")),
+    ]
+    points_html = "".join(f"<li>{icon(i)}<b>{e(x)}</b></li>" for i, x in points)
+
     body = f"""
-<h1>{e(t(lang, "法人番号 差分アーカイブ", "Corporate registry diff archive"))}</h1>
-<p class="lede">{e(t(lang, "国税庁 法人番号公表サイトの日次差分を、消える前に保存しています。法人のみ。個人の氏名は保有しません。", "We keep the National Tax Agency's daily corporate-registry diff before it is deleted. Corporations only; we hold no individual's name."))}</p>
+<h1 class="title">{e(t(lang, "法人番号の差分", "Corporate registry diff"))}</h1>
+<p class="sub">{e(t(lang, "国税庁が40日で消す日次の差分を、消える前に保管しています。", "The National Tax Agency deletes each daily diff after 40 days. We keep it first."))}</p>
+{strip}
 
-{stat_grid([
-    (t(lang, "保存済みレコード", "Records kept"), f"{bet_c['total']:,}", t(lang, f"{bet_c['n_files']} 公表日分", f"over {bet_c['n_files']} publication days")),
-    (t(lang, "収録期間", "Coverage"), f"{bet_c['first_day']}", t(lang, f"→ {bet_c['last_day']}", f"to {bet_c['last_day']}")),
-    (t(lang, "1日あたり平均", "Average per day"), f"{avg:,.0f}", t(lang, "レコード", "records")),
-    (t(lang, "上流の保持期間", "Upstream retention"), "40", t(lang, "日で削除される", "days, then deleted")),
+<section class="sec" aria-label="{e(t(lang, "要点", "Key points"))}">
+<ul class="tiles t3">{points_html}</ul>
+<div class="act">{intent_button(lang, "bet_c_registry_diff", "更新を受け取る", "Notify me")}</div>
+{intent_note(lang)}
+</section>
+
+<section class="sec" aria-labelledby="h-daily">
+<h2 id="h-daily">{icon("cal40")}{e(t(lang, "1日あたりの件数", "Records per day"))}</h2>
+{kpis([
+    (f"{bet_c['total']:,}", t(lang, "保管したレコード", "records kept")),
+    (f"{bet_c['n_files']}", t(lang, "公表日", "publication days")),
+    (f"{avg:,.0f}", t(lang, "1日平均", "average per day")),
+    (f"{bet_c['last_day']}", t(lang, "最新の公表日", "latest publication day")),
 ])}
-
-<h2>{e(t(lang, "なぜ40日が重要なのか", "Why the 40-day window matters"))}</h2>
-{t(lang, why_ja, why_en)}
-{intent_button(lang, "bet_c_registry_diff", "更新を受け取る", "Notify me")}
-
-<h2>{e(t(lang, "1日あたりの差分件数", "Records per publication day"))}</h2>
-<figure class="chart">
+<figure class="fig">
 {chart}
-<figcaption>{e(t(lang, f"{bet_c['first_day']} 〜 {bet_c['last_day']} の公表日ごとの差分レコード数（{len(days)} 日分）。{gaps_ja}", f"Diff records per publication day, {bet_c['first_day']} to {bet_c['last_day']} ({len(days)} days). {gaps_en}"))}</figcaption>
+<figcaption>{e(t(lang, f"{bet_c['first_day']}〜{bet_c['last_day']}、{len(days)}日分。", f"{bet_c['first_day']} to {bet_c['last_day']}, {len(days)} days."))}</figcaption>
 </figure>
+{labels([t(lang, "土日・祝日・12/29〜1/3 = 公表なし", "Weekends, holidays, 29 Dec-3 Jan = no file")])}
+</section>
 
-<h2>{e(t(lang, "変更の内訳", "What changed"))}</h2>
-<div class="grid c2">
-<div>{table(t(lang, "処理区分別", "By change type"), [t(lang, "処理区分", "Change type"), t(lang, "件数", "Records"), t(lang, "構成比", "Share")], proc_rows, ["", "n", "n"])}</div>
-<div>{table(t(lang, "法人種別", "By entity type"), [t(lang, "法人種別", "Entity type"), t(lang, "件数", "Records"), t(lang, "構成比", "Share")], kind_rows, ["", "n", "n"])}</div>
+<section class="sec" aria-labelledby="h-kind">
+<h2 id="h-kind">{icon("ledger")}{e(t(lang, "変更の内訳", "What changed"))}</h2>
+<div class="two">
+<div><h3>{e(t(lang, "処理区分", "Change type"))}</h3>{proc_bars}</div>
+<div><h3>{e(t(lang, "法人種別", "Entity type"))}</h3>{kind_bars}</div>
 </div>
+</section>
 
-<h2>{e(t(lang, "正規化後のスキーマ", "The normalised schema"))}</h2>
-<p>{e(t(lang, "公表元の CSV はヘッダなし30列です。英字転記4列と国外所在地の画像ID 2列は、取り込み時に捨てています（差分として価値がなく、転記された人名が混入し得る列だからです）。下の値は形を示すためのサンプルで、実在のレコードではありません。", "The publisher's CSV is 30 columns with no header. Six are dropped at parse: the four English-transliteration fields and the two overseas-address image ids, which add nothing to a diff and are the ones most likely to carry a transliterated personal name. The values below are illustrative, not a real record."))}</p>
-{table("", [t(lang, "列", "Column"), t(lang, "意味", "Meaning"), t(lang, "サンプル値", "Illustrative value")], schema_rows, ["", "", ""])}
-<p class="small">{e(t(lang, "主キーは corporate_number|change_date|sequence_number。訂正フラグ付きのレコードが同一キーの先行レコードを上書きし、それ以外は連番の大きいほうが残ります。", "Primary key: corporate_number|change_date|sequence_number. A record flagged as a correction supersedes an earlier one with the same key; otherwise the highest sequence number wins."))}</p>
-
-<div class="note">
-<p><strong>{e(t(lang, "個人情報は含まれません。", "There is no personal data here."))}</strong>
-{e(t(lang, "法人番号は法人と公的機関に対して指定されるもので、個人事業主には指定されません。差分の30列レイアウトには代表者名の列がありません。さらにパーサーは、担当者・氏名・連絡先などに一致する列名を見つけたら書き込まずに失敗します。将来レイアウトが変わっても、黙って公開されることはありません。", "Corporate numbers are issued to corporations and public bodies, not to sole proprietors, and the 30-column diff layout carries no representative-person field. On top of that, the parser refuses any column whose name matches a personal-field pattern, so a future layout change fails loudly instead of quietly publishing a name."))}</p>
-</div>
-
-<h2>{e(t(lang, "受け取り方", "How to take it"))}</h2>
-<ul class="clean">
-<li><a href="/feeds/nta-diff.xml">/feeds/nta-diff.xml</a> — {e(t(lang, "週次 RSS。1週ぶんの日次件数サマリを1アイテムで配信します。", "Weekly RSS: one item per ISO week, carrying that week's daily counts."))}</li>
-<li><a href="/data/bet-c/daily.json">/data/bet-c/daily.json</a> — {e(t(lang, "日次件数と処理区分内訳の JSON。", "Daily counts and the change-type breakdown, as JSON."))}</li>
-<li><a href="{e(GITHUB_CORE)}" rel="noopener">{e(t(lang, "収集スクリプト（MIT）", "The collector (MIT)"))}</a> — {e(t(lang, "毎晩2リクエスト（一覧ページと当日分のダウンロード）。robots.txt 遵守、同一ホストへ2秒以上の間隔。", "Two requests a night: the listing page and that day's file. robots.txt honoured, at least 2 s between requests to the same host."))}</li>
+<section class="sec" aria-labelledby="h-take">
+<h2 id="h-take">{e(t(lang, "受け取り方", "Take the data"))}</h2>
+<ul class="doors">
+<li>{icon("rss")}<span><a href="/feeds/nta-diff.xml">RSS</a><small>{e(t(lang, "週次", "weekly"))}</small></span></li>
+<li>{icon("braces")}<span><a href="/data/bet-c/daily.json">{e(t(lang, "データファイル（JSON）", "Data file (JSON)"))}</a><small>{e(t(lang, "日次件数と内訳", "daily counts and breakdowns"))}</small></span></li>
+<li>{icon("code")}<span><a href="{e(GITHUB_CORE)}" rel="noopener">{e(t(lang, "収集コード", "Collector code"))}</a><small>MIT</small></span></li>
 </ul>
-
-{attribution_block(lang, [NTA_ATTRIB + t(lang, "（公共データ利用規約 第1.0版。正規化・重複排除・再エンコードの加工をしています。）", " (公共データ利用規約 v1.0; used in modified form: normalised, deduplicated and re-encoded.)")])}
+<details>
+<summary>{e(t(lang, "列の一覧（正規化後）", "Columns (normalised schema)"))}</summary>
+{table(t(lang, "値は形を示すサンプルです。", "Values are illustrative, not a real record."), [t(lang, "列", "Column"), t(lang, "意味", "Meaning"), t(lang, "サンプル値", "Illustrative value")], schema_rows, ["", "", ""])}
+<p class="fine">{e(t(lang, "主キー: corporate_number|change_date|sequence_number", "Primary key: corporate_number|change_date|sequence_number"))}</p>
+</details>
+</section>
 """
 
     dataset = {
@@ -2162,123 +1780,25 @@ def build_bet_c(lang, bet_c, built_at):
         alt_path=alt,
         jsonld=[dataset],
         is_data_page=True,
+        attribution=[
+            NTA_ATTRIB
+            + t(
+                lang,
+                "（公共データ利用規約 第1.0版。正規化・重複排除・再エンコードの加工をしています。）",
+                " (公共データ利用規約 v1.0; used in modified form: normalised, deduplicated and re-encoded.)",
+            )
+        ],
     )
 
 
 def build_pricing(lang, built_at):
+    """One statement, nothing else (Owner, 2026-09-24; brief section 6)."""
     path = f"/{lang}/pricing.html"
     alt = f"/{'en' if lang == 'ja' else 'ja'}/pricing.html"
-
-    title = t(
-        lang,
-        "料金（準備中） | Deltakura",
-        "Pricing (coming soon) | Deltakura",
-    )
-    desc_ja = (
-        "Deltakura の有料レイヤーの予定価格。現在は準備中で、決済は開いていません。"
-        "無料レイヤー（ページ・RSS・JSON・MCP）は今後も無料のまま提供します。"
-    )
-    desc_en = (
-        "Planned pricing for the Deltakura paid layer. Nothing is on sale yet and there is no checkout. "
-        "The free layer — pages, RSS, JSON and MCP — stays free."
-    )
-
-    free_rows = [
-        [
-            e(t(lang, "落札実績 統計", "Tender award statistics")),
-            e(t(lang, "全 169 ページ + JSON エンドポイント", "All 169 pages plus their JSON endpoints")),
-            e(t(lang, "無料・認証不要", "Free, no key")),
-        ],
-        [
-            e(t(lang, "法人番号 差分", "Registry diff")),
-            e(t(lang, "日次件数・週次 RSS・JSON", "Daily counts, weekly RSS, JSON")),
-            e(t(lang, "無料・認証不要", "Free, no key")),
-        ],
-        [
-            e(t(lang, "MCP サーバー / npm", "MCP server / npm")),
-            e(t(lang, "読み取り専用ツール（準備中）", "Read-only tools (not published yet)")),
-            e(t(lang, "無料", "Free")),
-        ],
-        [
-            e(t(lang, "収集コード", "Collector code")),
-            e(t(lang, "クローラー・正規化・匿名化・テスト", "Crawlers, normalisation, anonymiser, tests")),
-            "MIT",
-        ],
-    ]
-
-    paid_rows = [
-        [
-            e(t(lang, "落札実績レポート（単発）", "Award statistics report (one-off)")),
-            e(t(lang, "業種 × 都道府県の統計レポート", "Statistics report per industry x prefecture")),
-            "JPY 2,980 – 9,800",
-            '<span class="tag soon">' + e(t(lang, "要 自治体データ", "blocked on municipal data")) + "</span>",
-        ],
-        [
-            e(t(lang, "コンサルタント向けプラン", "Consultant plan")),
-            e(t(lang, "CSV エクスポート + Webhook", "CSV export plus webhooks")),
-            e(t(lang, "JPY 9,800 / 月（税込）", "JPY 9,800 / month (tax incl.)")),
-            '<span class="tag soon">' + e(t(lang, "準備中", "Coming soon")) + "</span>",
-        ],
-        [
-            e(t(lang, "採用ウォッチリスト", "Hiring watchlist")),
-            e(t(lang, "最大200ドメイン、Slack / Discord Webhook", "Up to 200 domains, Slack / Discord webhook")),
-            e(t(lang, "JPY 4,350 / 月（USD 29）", "JPY 4,350 / month (USD 29)")),
-            '<span class="tag soon">' + e(t(lang, "Bet B 未公開", "Bet B not published")) + "</span>",
-        ],
-        [
-            e(t(lang, "API / MCP キー", "API / MCP key")),
-            e(t(lang, "従量制の読み取り API", "Metered read API")),
-            "USD 79",
-            '<span class="tag soon">' + e(t(lang, "準備中", "Coming soon")) + "</span>",
-        ],
-        [
-            e(t(lang, "Apify Actor（従量課金）", "Apify Actor (pay per event)")),
-            e(t(lang, "変更イベント単位。変更がなければ 0 円。", "Charged per change event; zero when nothing changed.")),
-            e(t(lang, "USD 0.005 – 0.02 / イベント", "USD 0.005 - 0.02 per event")),
-            '<span class="tag soon">' + e(t(lang, "準備中", "Coming soon")) + "</span>",
-        ],
-    ]
-
-    honest_ja = """<p><strong>先に正直なところを書きます。</strong>上の表の1行目「落札実績レポート」は、<em>いま公開している国の落札実績データからは作れません</em>。国の調達ポータルは予定価格を公表しておらず、落札率も参考価格も算出できないからです。この行が売り物になるのは、予定価格を公表している自治体のデータを追加できたときだけです。できなければ、この行は消します。</p>
-<p>3行目の採用ウォッチリストも同じです。取得元の利用条件は確認済みですが、公開そのものが別途の承認事項で、データを1件も公開していません。値付けも仮のものです。</p>"""
-    honest_en = """<p><strong>The honest part first.</strong> The first row above — award statistics reports — <em>cannot be built from the national data on this site</em>. The national procurement portal publishes no predicted price, so there is no award ratio and no reference price to sell. That row becomes real only if municipal sources that do publish a predicted price can be added. If they cannot, the row gets deleted rather than quietly redefined.</p>
-<p>The same applies to the hiring watchlist: its sources' reuse terms have been reviewed, but publication is a separate approval that has not been given and not one record is published, so its price is provisional too.</p>"""
-
-    terms_ja = f"""<ul class="clean">
-<li><strong>販売者</strong>: 決済が開く際は、海外の Merchant of Record（Polar / Apify）が販売者になります。返金もそちらが実行します。</li>
-<li><strong>返金</strong>: 単発購入は14日以内であれば理由を問わず返金。サブスクリプションはいつでも解約でき、当期分の日割り返金はありません。従量課金は提供済みの分について返金できません。</li>
-<li><strong>適格請求書</strong>: 販売者が国外事業者のため、日本の適格請求書（登録番号付き）は発行できません。仕入税額控除の可否は貴社の税務顧問にご確認ください。</li>
-<li><strong>無料レイヤー</strong>: 有料化後も、このサイトのページ・RSS・JSON・MCP は無料のまま残します。有料化のために無料機能を削ることはしません。</li>
-<li><strong>メール</strong>: 購入手続きに伴う領収書等は Merchant of Record が送ります。Deltakura からメールを送ることは、購入後も一切ありません。</li>
-</ul>"""
-    terms_en = f"""<ul class="clean">
-<li><strong>Seller.</strong> When checkout opens, a merchant of record (Polar / Apify) is the seller and executes every refund.</li>
-<li><strong>Refunds.</strong> One-off purchases: 14 days, no questions asked. Subscriptions: cancel any time, no pro-rata refund of the current period. Metered usage already served is not refundable.</li>
-<li><strong>Japanese qualified invoices (適格請求書).</strong> The seller is a foreign business, so a registration-numbered invoice cannot be issued. Ask your tax adviser whether the input credit applies to you.</li>
-<li><strong>The free layer stays free.</strong> Pages, RSS, JSON and MCP will not be taken away to make room for a paid tier.</li>
-<li><strong>Email.</strong> Receipts come from the merchant of record. Deltakura itself sends no email, before or after a purchase.</li>
-</ul>"""
-
-    body = f"""
-<h1>{e(t(lang, "料金", "Pricing"))} <span class="tag soon">{e(t(lang, "準備中", "Coming soon"))}</span></h1>
-<p class="lede">{e(t(lang, "決済はまだ開いていません。購入リンクもありません。ここにあるのは、有料レイヤーを開くときに提示する予定の価格です。先に見えているほうがフェアだと考えて出しています。", "Nothing is on sale and there is no checkout link on this page. These are the prices we intend to open with, published early because it seems fairer than pricing in private."))}</p>
-
-<h2>{e(t(lang, "無料で続けるもの", "What stays free"))}</h2>
-{table("", [t(lang, "対象", "What"), t(lang, "内容", "Contents"), t(lang, "価格", "Price")], free_rows)}
-
-<h2>{e(t(lang, "有料レイヤー（予定）", "Paid layer (planned)"))}</h2>
-{table(t(lang, "いずれも準備中です。購入はできません。", "All of these are unavailable; nothing can be bought today."), [t(lang, "プラン", "Plan"), t(lang, "内容", "Contents"), t(lang, "予定価格", "Planned price"), t(lang, "状態", "Status")], paid_rows, ["", "", "n", ""])}
-
-<div class="note">{t(lang, honest_ja, honest_en)}</div>
-
-<h2>{e(t(lang, "有料化したときの条件", "The terms, when it opens"))}</h2>
-{t(lang, terms_ja, terms_en)}
-
-<h2>{e(t(lang, "開いたら知りたい方へ", "If you want to know when it opens"))}</h2>
-<p>{e(t(lang, "メールアドレスは受け取りません。下のボタンはクリック数だけを記録します。実際のお知らせは RSS と GitHub のリリースで流します。", "We take no email address. The button below records a click and nothing else; the actual announcement goes out through the RSS feed and GitHub releases."))}</p>
-{intent_button(lang, "pricing_paid_plans", "有料プランが開いたら知りたい", "Tell me when paid plans open")}
-"""
-
+    title = t(lang, "料金 | Deltakura", "Pricing | Deltakura")
+    desc_ja = "有料プランはまだ開設していません。"
+    desc_en = "Paid plans are not open yet."
+    body = f'<h1 class="title lone">{e(t(lang, desc_ja, desc_en))}</h1>\n'
     return path, alt, render_page(
         lang=lang,
         path=path,
@@ -2290,24 +1810,101 @@ def build_pricing(lang, built_at):
     )
 
 
-def build_privacy(lang, bet_a_prov, bet_c, built_at):
+def build_privacy(lang, bet_a_prov, bet_c, built_at, any_estimated=False):
+    """Promise tiles, then the facts in <details>. No justification prose."""
     path = f"/{lang}/privacy.html"
     alt = f"/{'en' if lang == 'ja' else 'ja'}/privacy.html"
 
     title = t(
         lang,
-        "プライバシーと方法論 — Cookie なし・メールなし | Deltakura",
-        "Privacy and methodology — no cookies, no email | Deltakura",
+        "プライバシー — Cookie なし・メール収集なし | Deltakura",
+        "Privacy — no cookies, no email collection | Deltakura",
     )
     desc_ja = (
-        "Deltakura のプライバシー方針と方法論。アクセス解析のビーコンを読み込まない作り、"
-        "メールアドレスを収集しない設計、"
-        "出典とライセンス、匿名化ルール、法人からの削除依頼の受け付け方。連絡先は GitHub Issues のみです。"
+        "Deltakura のプライバシー。Cookie なし、メール収集なし、入力欄なし、個人名を扱わない。"
+        "送信・保存するもの、匿名化、出典とライセンス、削除依頼の窓口（GitHub Issues）。"
     )
     desc_en = (
-        "Deltakura's privacy statement and methodology: no analytics beacon, a design that collects no "
-        "email address, the sources and their licences, the anonymisation rules, and how a company asks for "
-        "a removal. Contact is GitHub Issues only."
+        "Deltakura privacy: no cookies, no email collection, no input fields, no personal names. "
+        "What is sent and stored, the anonymisation rules, sources and licences, and the removal "
+        "channel (GitHub Issues)."
+    )
+
+    promises = [
+        ("cookie-off", t(lang, "Cookie なし", "No cookies")),
+        ("mail-off", t(lang, "メール収集なし", "No email collected")),
+        ("field-off", t(lang, "入力欄なし", "No input fields")),
+        ("eye-off", t(lang, "個人名を扱わない", "No personal names")),
+        ("clock", t(lang, "計測は25時間で消える", "Counter data gone in 25 hours")),
+        ("code", t(lang, "コードは全部公開", "All code is public")),
+    ]
+    tiles = "".join(f"<li>{icon(i)}<b>{e(x)}</b></li>" for i, x in promises)
+
+    def section(summary, items, extra=""):
+        lis = "".join(f"<li>{x}</li>" for x in items)
+        return (
+            f"<details><summary>{e(summary)}</summary>"
+            f'<ul class="facts-list">{lis}</ul>{extra}</details>'
+        )
+
+    api = "deltakura-api.deltakura.workers.dev"
+    sec_button = section(
+        t(lang, "「知りたい」「更新を受け取る」ボタン", "The notify buttons"),
+        [
+            e(t(lang, "送るのは3つだけ: 製品、表示かクリックか、ブラウザが作るランダムな文字列。",
+                "Three things are sent: the product, view or click, and a random string your browser makes.")),
+            e(t(lang, "文字列はブラウザの localStorage に保存します。Cookie ではありません。",
+                "The string is kept in your browser's localStorage. It is not a cookie.")),
+            e(t(lang, f"送信先: {api}（Cloudflare Workers で当プロジェクトが運用）。",
+                f"Sent to: {api} (run by this project on Cloudflare Workers).")),
+            e(t(lang, "保存: 文字列のソルト付きハッシュを最大25時間。その後は製品別・日別の件数だけ。",
+                "Stored: a salted hash of the string for at most 25 hours; after that, per-product daily counts only.")),
+            e(t(lang, "IP アドレスと生の文字列は保存しません。Cloudflare の運用ログは最長3日です。",
+                "Neither your IP address nor the raw string is stored. Cloudflare keeps operational logs for up to 3 days.")),
+            e(t(lang, "数え方: ブラウザ・製品・日（UTC）ごとに1回。件数は関心を持った人数の上限値です。",
+                "Counting: once per browser, product and UTC day. The count is an upper bound on interested people.")),
+            e(t(lang, "集計値の公開先: ", "Public totals: ")) + f"<code>https://{api}/v0/intent</code>",
+        ],
+    )
+    sec_loads = section(
+        t(lang, "読み込むもの・数えないもの", "What loads, and what is not counted"),
+        [
+            e(t(lang, "スクリプトは自前の2本だけ: ", "Two self-hosted scripts only: ")) + "<code>/assets/config.js</code>, <code>/assets/intent.js</code>",
+            e(t(lang, "アクセス解析はありません。ページの閲覧数も RSS の購読数も数えていません。",
+                "No analytics. Page visits and RSS subscribers are not counted.")),
+            e(t(lang, "計測を追加する場合は、先にこのページと CSP を更新します。",
+                "If measurement is ever added, this page and the CSP change first.")),
+        ],
+    )
+    sec_anon = section(
+        t(lang, "匿名化のルール", "Anonymisation rules"),
+        [
+            e(t(lang, "名称を残すのは、検証済みの13桁の法人番号を持つ落札者だけです。",
+                "Only winners with a verified 13-digit corporate number keep their name.")),
+            e(t(lang, "それ以外の落札者は取り込み時に匿名化します。",
+                "Every other winner is masked at ingestion.")),
+            e(t(lang, "担当者・氏名・連絡先の列は、取り込む前に捨てます。",
+                "Contact-person, name and contact columns are dropped before anything else.")),
+            e(t(lang, "件名は人名検出にかけ、一致したら差し替えます。",
+                "Contract titles go through a person-name detector; a match replaces the title.")),
+            e(t(lang, "匿名化した個人が1〜2者の区分（都道府県 × セクター × 年度）は公開しません。",
+                "A prefecture x sector x year bucket with one or two masked individuals is not published.")),
+        ],
+    )
+    sec_numbers = section(
+        t(lang, "数字の作り方", "How the numbers are made"),
+        [
+            e(t(lang, "件数・合計・最小・最大は、公開した集計表そのままの値です。",
+                "Counts, totals, minimum and maximum are exactly the published table.")),
+            e(
+                t(lang, "中央値・四分位（†）は、集計済みの区分から推定した値です。",
+                  "Medians and quartiles marked † are estimated from the aggregated buckets.")
+                if any_estimated
+                else t(lang, "中央値・四分位は、1件ごとの落札価格から計算した値です（inclusive 法）。",
+                       "Medians and quartiles are computed from the individual award prices (inclusive method).")
+            ),
+            e(t(lang, "日付と時刻はすべて UTC です。", "Every date and time is UTC.")),
+        ],
     )
 
     sources_rows = [
@@ -2315,129 +1912,60 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
             e("調達ポータル 落札実績"),
             '<a href="https://www.p-portal.go.jp/" rel="noopener nofollow">p-portal.go.jp</a>',
             e("政府標準利用規約(第2.0版)"),
-            e(t(lang, "商用利用可・出典表示が必要", "Commercial reuse permitted with source indication")),
             e(t(lang, f"{bet_a_prov['records']:,} 件", f"{bet_a_prov['records']:,} awards")),
         ],
         [
             e("国税庁 法人番号公表サイト 差分"),
             '<a href="https://www.houjin-bangou.nta.go.jp/download/sabun/" rel="noopener nofollow">houjin-bangou.nta.go.jp</a>',
             e("公共データ利用規約(第1.0版)"),
-            e(t(lang, "商用利用・再配布可・出典表示と改変の明示が必要", "Commercial reuse and redistribution permitted; attribution and a modification notice required")),
             e(t(lang, f"{bet_c['total']:,} レコード", f"{bet_c['total']:,} records")),
         ],
-        [
-            e(t(lang, "採用ボード（Bet B）", "Job boards (Bet B)")),
-            e("—"),
-            e(t(lang, "確認済み（条件付き再利用可）", "reviewed; reuse permitted under conditions")),
-            e(t(lang, "公開は承認待ちのため公開データなし", "Publication pending approval; nothing published")),
-            e("0"),
-        ],
     ]
-
-    analytics_ja = f"""<h3>計測について</h3>
-<p>Cookie を設置しません。ログインもアカウントもありません。他サイトを横断する追跡も行いません。</p>
-<ul class="clean">
-<li><strong>アクセス数は数えていません</strong>: アクセス解析のビーコンはこのサイトに1つも読み込まれていません。読み込まれるスクリプトは自前の2本（<code>/assets/config.js</code> と <code>/assets/intent.js</code>）だけで、配信時の Content-Security-Policy も同一オリジンのスクリプトしか許可せず、通信先はこのサイト自身と下記の計測用エンドポイントに限っています。数えているのは次の「更新を受け取る」ボタンだけです。今後 Cookie を使わない計測（Cloudflare Web Analytics）を導入する場合は、このページの記述と CSP を先に更新し、同じ変更の中でのみ有効化します。</li>
-<li><strong>「更新を受け取る」ボタン</strong>: 二重カウントを防ぐために、ブラウザの localStorage にランダムな文字列を1つ保存します。個人と結びつく情報ではなく、他のサイトからは読めません。プライベートウィンドウでは保存されず、その場合もページは正常に動きます。ボタンのあるページを開いたとき（表示）とボタンを押したとき（クリック）に、<strong>製品の種類・表示かクリックか・このランダムな文字列の3つだけ</strong>を、当プロジェクトが Cloudflare Workers 上で運用する計測用エンドポイント（<code>deltakura-api.deltakura.workers.dev</code>）へ送信します。エンドポイントはこの文字列を、非公開の値と日付で変わるソルトでハッシュ化した値だけを重複排除のために最大25時間保存し、残すのは製品ごと・日ごとの件数だけです。生の文字列も IP アドレスも保存しません。インターネット通信の性質上、IP アドレスは配信を担う Cloudflare に届き、エンドポイントの運用ログは Cloudflare 上で最長3日間保持されます。集計値は誰でも <code>https://deltakura-api.deltakura.workers.dev/v0/intent</code> で確認できます。</li>
-<li><strong>フィードの購読数も数えていません</strong>: RSS は静的ファイルとして配信しており、アクセスログを集計する仕組みは動いていません。将来 JSON フィードを自前のエンドポイントから配信する場合は、リーダーのユーザーエージェントと、日ごとに変わるソルトで /16 に丸めたうえでハッシュ化した IP を当日の集計にのみ使い、集計後に破棄します。生の IP を保存することはありません。その場合も、このページを先に更新します。</li>
-<li><strong>入力欄がありません</strong>: このサイトにフォームは1つもありません。メールアドレス、氏名、会社名、いずれも受け取る手段がありません。</li>
-</ul>
-<h3>メールを使わない理由</h3>
-<p>個人の連絡先をお預かりしないことを優先し、<strong>メールという手段を最初から持たない</strong>ことにしました。ニュースレターも、1回限りのお知らせも、営業メールも送りません。購入が始まった後の領収書は、販売者である Merchant of Record が送ります。</p>"""
-
-    analytics_en = f"""<h3>Measurement</h3>
-<p>No cookies are set. There is no login and no account, and nothing here follows you to another site.</p>
-<ul class="clean">
-<li><strong>Page visits are not counted.</strong> No analytics beacon of any kind is loaded on this site. The only scripts served are two self-hosted files (<code>/assets/config.js</code> and <code>/assets/intent.js</code>), and the Content-Security-Policy sent with every page allows scripts from this origin only and network connections only to this origin and the counting endpoint below. The one thing counted is the "Notify me" button. If cookie-less analytics (Cloudflare Web Analytics) is added later, this page and the CSP are updated first, in the same change that switches it on.</li>
-<li><strong>The "Notify me" button</strong> stores one random string in your browser's localStorage so a second click is not counted twice. It is not tied to a person, cannot be read by another site, and is simply absent in a private window — the page still works. When a page with the button is opened (a view) and when the button is pressed (a click), the page sends <strong>exactly three things</strong> — the product, view or click, and that random string — to our counting endpoint, <code>deltakura-api.deltakura.workers.dev</code>, which this project runs on Cloudflare Workers. The endpoint keeps only a hash of the string, salted with a secret value and the date, for at most 25 hours to de-duplicate, and keeps nothing but per-product daily counts after that. Neither the raw string nor your IP address is stored by the counter. As with any web request, your IP address reaches Cloudflare, which runs the endpoint, and Cloudflare keeps the endpoint's operational logs for up to 3 days. Anyone can read the totals at <code>https://deltakura-api.deltakura.workers.dev/v0/intent</code>.</li>
-<li><strong>Feed subscribers are not counted either.</strong> The RSS feed is a static file and nothing here aggregates access logs. If a JSON feed is later served from an endpoint of our own, it will use the reader's user agent plus a hash of the IP truncated to /16 with a salt that rotates daily, for that day's aggregate only, and then discard it. A raw IP address would never be stored — and this page would be updated before that ships.</li>
-<li><strong>There is no input field.</strong> This site has no form at all — no way to submit an email address, a name or a company.</li>
-</ul>
-<h3>Why there is no email</h3>
-<p>We chose not to hold anyone's contact details, so the channel does not exist here: no newsletter, no one-off announcement, no outbound sales mail. Once purchases open, receipts come from the merchant of record, which is the seller.</p>"""
-
-    method_ja = """<h3>匿名化</h3>
-<p>取り込みの時点で、次のルールを機械的に適用します。人が判断する余地はありません。</p>
-<ul class="clean">
-<li>チェックディジットが正しい13桁の法人番号を持つ落札者は、名称をそのまま保持します。その名称は国が法人番号公表サイトで公開しているものです。</li>
-<li>法人番号を持たない落札者は、名前がどれだけ法人らしく見えても匿名化します。「ヤマダ印刷」も「山田太郎商店」も同じ扱いです。チェックディジットが合わない番号も同様に匿名化します。</li>
-<li>担当者・氏名・連絡先・電話・メールに相当する列は、正規化の前に捨てます。公開物に到達する経路がありません。</li>
-<li>落札案件の件名は人名検出器を通し、一致したら件名ごと差し替えます。</li>
-<li>落札者ディレクトリは作りません。氏名で検索できる集計は、コード側で拒否します。</li>
-<li>匿名化された個人が1〜2者しかいない区分（都道府県 × セクター × 年度）は、消去法による再識別を防ぐため、区分ごと公開集計から外します。</li>
-</ul>
-<h3>数字の作り方</h3>
-<p>各ページの中央値と四分位のうち、セクター全体の値は推定値で、† を付けています。元データが 年度 × 都道府県 × セクター で集計済みのため、セクター全体の中央値は直接は読み出せません。各都道府県バケットの5点（最小・Q1・中央値・Q3・最大）を区分線形の分布とみなし、件数で重み付けして合成した分布を二分法で反転して求めています。件数・合計・最小・最大、および都道府県ごとの中央値・四分位は正確な値です。</p>
-<h3>「更新を受け取る」の件数の数え方</h3>
-<p>ボタンの表示とクリックは、<strong>ブラウザ（クライアント）ごと・製品ごと・1日（UTC）ごとに1回</strong>に重複排除して数えます。クライアントの区別はブラウザが自分で作るランダムな文字列に頼っているため、同じ人が別のブラウザや消去後のブラウザから押せば別に数えられ、機械的に水増しすることも防げません。そのためこの件数は、関心を持った人数の<strong>上限</strong>として扱い、そう報告します。</p>
-<h3>公式データではありません</h3>
-<p>ここは公開情報を機械的に集めた非公式アーカイブです。収集漏れも解析誤りも起こり得ます。重要な判断の前には、各ページの出典 URL から原本をご確認ください。無保証です。</p>"""
-
-    method_en = """<h3>Anonymisation</h3>
-<p>These rules are applied mechanically at ingestion. No judgement call is involved.</p>
-<ul class="clean">
-<li>A winner with a checksum-valid 13-digit corporate number keeps its name — that name is published by the state on the corporate-number site.</li>
-<li>A winner without one is masked, however corporate the name looks. A number whose check digit fails is masked as well, and flagged.</li>
-<li>Columns equivalent to contact person, personal name, phone or email are dropped before normalisation. There is no path by which they reach anything published.</li>
-<li>Contract titles pass a person-name detector; a match replaces the title.</li>
-<li>No winner directory is built. An aggregate keyed by a party's name is refused in code, not by policy.</li>
-<li>A prefecture x sector x year bucket holding only one or two masked individuals is dropped from the public aggregate so nobody can be re-identified by elimination.</li>
-</ul>
-<h3>How the numbers are made</h3>
-<p>On each statistics page, the sector-wide median and quartiles are estimates and carry a dagger. The source statistics are pre-aggregated at fiscal year x prefecture x sector, so a sector-wide median cannot be read off the file. Each prefecture bucket's five order statistics are treated as a piecewise-linear distribution, mixed by award count, and the mixture is inverted by bisection. Counts, totals, minimum, maximum, and each prefecture's own median and quartiles are exact.</p>
-<h3>How "Notify me" is counted</h3>
-<p>Views and clicks are de-duplicated to <strong>one per client (browser), per product, per UTC day</strong>. A client is told apart only by a random string the browser generates itself, so the same person on another browser, or after clearing storage, counts again, and a script can inflate the count. The number is therefore treated, and reported, as an <strong>upper bound</strong> on the people who showed interest.</p>
-<h3>This is not an official source</h3>
-<p>It is an unofficial archive built by automated collection of public information. Gaps and parsing errors are possible. Before relying on a number, open the source URL given on the page. Provided without warranty.</p>"""
-
-    removal_ja = f"""<p>掲載されている数値は、国が公開している調達・登記のオープンデータから機械的に集計したものです。個人情報は保有していませんが、それでも次のような依頼は受け付けます。</p>
-<ul class="clean">
-<li><strong>誤りの指摘</strong>: 集計や突合に誤りがある場合。出典の原本と食い違う箇所をお知らせください。</li>
-<li><strong>個人が特定できる情報の指摘</strong>: 匿名化の漏れを見つけた場合。<strong>24時間以内</strong>に該当箇所を非公開にし、原因を調査します。これは最優先で扱います。</li>
-<li><strong>法人からの削除依頼</strong>: 法人名や法人番号に関する掲載について。ただし、出典が国の公開データであるため、削除できる範囲には限りがあります。判断と対応内容は依頼ごとに公開の Issue に記録します。</li>
-</ul>
-<p>受け付けは <a href="{e(GITHUB_ISSUES)}" rel="noopener">GitHub Issues</a> のみです。メールでの受付はありません（上記のとおりメールの手段を持たないためです）。件名に「削除依頼」または「REMOVAL」と入れていただくと優先します。通常2営業日以内に応答します。</p>"""
-
-    removal_en = f"""<p>Everything here is aggregated mechanically from open procurement and registry data published by the Japanese state. We hold no personal data, and we still accept these requests:</p>
-<ul class="clean">
-<li><strong>Report an error</strong> in an aggregate or a join. Point at where it disagrees with the source.</li>
-<li><strong>Report identifiable information.</strong> If you find a gap in the anonymisation, we take the item down <strong>within 24 hours</strong> and investigate. This is handled ahead of everything else.</li>
-<li><strong>Removal request from a company</strong> regarding a corporate name or corporate number. Because the upstream source is state-published open data, what can be removed is limited; the decision and what was done are recorded in the public issue.</li>
-</ul>
-<p>Requests go through <a href="{e(GITHUB_ISSUES)}" rel="noopener">GitHub Issues</a> only. There is no email intake, for the reason given above. Put "REMOVAL" or 「削除依頼」 in the title and it is prioritised. We reply within two business days.</p>"""
+    sec_sources = (
+        f"<details><summary>{e(t(lang, '出典とライセンス', 'Sources and licences'))}</summary>"
+        + table("", [t(lang, "出典", "Source"), "URL", t(lang, "ライセンス", "Licence"), t(lang, "収録量", "Volume")], sources_rows, ["", "", "", "n"])
+        + '<ul class="facts-list"><li>'
+        + e(t(lang, "当プロジェクトの集計データ: CC BY 4.0。収集コード: MIT。", "Our derived aggregates: CC BY 4.0. Collector code: MIT."))
+        + "</li></ul></details>"
+    )
+    sec_crawl = section(
+        t(lang, "収集のしかた", "How collection behaves"),
+        [
+            e(t(lang, "robots.txt に従います（ホストごとに24時間ごとに再確認）。", "robots.txt is obeyed, re-checked every 24 hours per host.")),
+            e(t(lang, "同じホストへのリクエストは2秒以上あけ、並列にしません。", "At least 2 seconds between requests to one host; never parallel.")),
+            e(t(lang, "連絡先 URL つきの User-Agent を名乗ります。", "An identifying User-Agent with a contact URL is always sent.")),
+            e(t(lang, "変わっていないファイルは取り直しません。", "An unchanged file is not fetched again.")),
+            e(t(lang, "ログイン、アクセス制限の回避、CAPTCHA の突破はしません。", "No login, no bypassing access controls, no CAPTCHA solving.")),
+            e(t(lang, "取得元から停止の連絡があれば、24時間以内に止めます。", "If a source asks us to stop, collection from it stops within 24 hours.")),
+        ],
+    )
+    sec_removal = section(
+        t(lang, "訂正・削除の依頼", "Corrections and removals"),
+        [
+            e(t(lang, "受付: ", "Where: ")) + f'<a href="{e(GITHUB_ISSUES)}" rel="noopener">GitHub Issues</a>'
+            + e(t(lang, "（件名に「削除依頼」または REMOVAL）", " (put REMOVAL or 削除依頼 in the title)")),
+            e(t(lang, "個人が特定できる情報の指摘: 24時間以内に非公開にします。",
+                "Identifiable information: taken down within 24 hours.")),
+            e(t(lang, "誤りの指摘・法人からの削除依頼: 通常2営業日以内に応答します。",
+                "Errors and removal requests from companies: answered within two business days.")),
+        ],
+    )
 
     body = f"""
-<h1>{e(t(lang, "プライバシーと方法論", "Privacy and methodology"))}</h1>
-<p class="lede">{e(t(lang, "Cookie を置かず、メールアドレスを集めず、個人の氏名を扱いません。どれも方針である前に、作りのレベルでそうなっています。", "No cookies, no email addresses, no individuals' names. Each of those is a property of how this is built, not only a policy."))}</p>
+<h1 class="title">{e(t(lang, "プライバシー", "Privacy"))}</h1>
+<ul class="tiles t3">{tiles}</ul>
 
-<h2>{e(t(lang, "プライバシー", "Privacy"))}</h2>
-{t(lang, analytics_ja, analytics_en)}
+<section class="sec" aria-label="{e(t(lang, "詳細", "Details"))}">
+{sec_button}
+{sec_loads}
+{sec_anon}
+{sec_numbers}
+{sec_sources}
+{sec_crawl}
+{sec_removal}
+</section>
 
-<h2>{e(t(lang, "出典とライセンス", "Sources and licences"))}</h2>
-{table(t(lang, "収集しているのはこの3つだけです。利用条件が確認できない取得元からは、1件も取り込みません。", "These are the only sources. Nothing is ingested from a source whose reuse terms cannot be verified."), [t(lang, "出典", "Source"), "URL", t(lang, "ライセンス", "Licence"), t(lang, "条件", "Terms"), t(lang, "収録量", "Volume")], sources_rows)}
-<p class="small">{e(t(lang, "当社が生成した集計データは CC BY 4.0、収集コードは MIT で公開します。再配布の際は各ページの出典表記をそのままお使いください。", "Our derived aggregates are CC BY 4.0 and the collector code is MIT. When you redistribute, carry the attribution string shown on the page."))}</p>
-{attribution_block(lang, source_notices(lang))}
-
-<h2>{e(t(lang, "方法論", "Methodology"))}</h2>
-{t(lang, method_ja, method_en)}
-
-<h2>{e(t(lang, "収集のしかた", "How the collection behaves"))}</h2>
-<ul class="clean">
-<li>{e(t(lang, "robots.txt を取得して従います。ホストごとに24時間ごとに再確認します。", "robots.txt is fetched and obeyed, re-checked every 24 hours per host."))}</li>
-<li>{e(t(lang, "同一ホストへのリクエストは2秒以上あけ、並列化しません。", "At least 2 seconds between requests to the same host, with no parallelism."))}</li>
-<li>{e(t(lang, "連絡先 URL を含む識別可能な User-Agent を必ず送ります。ブラウザを装うことはしません。", "Every request carries an identifying User-Agent with a contact URL. We never spoof a browser."))}</li>
-<li>{e(t(lang, "条件付きリクエストとローカルキャッシュを使い、変わっていないものは取りに行きません。", "Conditional requests and a local cache mean an unchanged file is not re-fetched."))}</li>
-<li>{e(t(lang, "ログインしません。アクセス制限を回避しません。CAPTCHA を解きません。", "We never log in, never bypass an access control, and never solve a CAPTCHA."))}</li>
-<li>{e(t(lang, "取得元から停止のご連絡をいただいた場合、24時間以内に当該ホストへの収集を止めます。", "If a source asks us to stop, we halt collection from that host within 24 hours."))}</li>
-</ul>
-
-<h2>{e(t(lang, "訂正・削除のご依頼", "Corrections and removals"))}</h2>
-{t(lang, removal_ja, removal_en)}
-
-<h2>{e(t(lang, "連絡先", "Contact"))}</h2>
-<p>{e(t(lang, "連絡手段は GitHub Issues のみです。", "GitHub Issues is the only channel."))} <a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(GITHUB_ISSUES)}</a></p>
-<p class="small muted">{e(t(lang, "運営: Sirevo（https://sirevo.jp/）。決済が始まった際の販売者は海外の Merchant of Record です。このページの内容は法的助言ではありません。", "Operated by Sirevo (https://sirevo.jp/). When payments open, the seller of record is a foreign merchant of record. Nothing on this page is legal advice."))}</p>
-<p class="small faint">{e(t(lang, "最終更新: ", "Last updated: "))}{e(built_at[:10])}{e(t(lang, "（UTC。このページは毎回のビルドで生成されるため、日付はビルド日です。公開データの取得日は上の表と各統計ページに記載しています。）", " UTC (this page is regenerated by every build, so the date is the build date; the retrieval dates of the source data are in the table above and on the statistics pages)"))}</p>
+<p class="fine">{e(t(lang, "運営: ", "Operated by "))}<a href="{e(OPERATOR_URL)}" rel="noopener">{e(OPERATOR_NAME)}</a> · {e(t(lang, "最終更新: ", "Last updated: "))}<span class="num">{e(built_at[:10])}</span> UTC</p>
 """
 
     return path, alt, render_page(
@@ -2448,38 +1976,24 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
         desc_en=desc_en,
         body=body,
         alt_path=alt,
+        attribution=source_notices(lang),
     )
 
 
 def build_root(bet_a_pages, bet_c, built_at):
-    n = len(bet_a_pages)
-    body = f"""
-<h1>Deltakura <span class="faint">デルタ蔵</span></h1>
-<p class="lede">An open-methodology archive of Japanese public-data histories.<br>
-日本の公開データの履歴を、方法論を公開したまま蓄積するアーカイブです。</p>
-<div class="grid c2">
-<div class="card">
-<h3>日本語</h3>
-<p>国の落札実績統計（{n} ページ）と、国税庁 法人番号の日次差分アーカイブ（{bet_c['total']:,} レコード）。出典・ライセンス・匿名化ルールをすべて公開しています。メールアドレスは集めません。</p>
-<div class="spacer"></div>
-<p><a href="/ja/">日本語のサイトへ →</a></p>
+    body = """
+<div class="hero">
+<h1>消える前に、蔵へ。</h1>
+<p class="sub" lang="en">Into the storehouse, before it disappears.</p>
+<div class="act"><a class="btn" href="/ja/">日本語</a><a class="btn" href="/en/" lang="en">English</a></div>
 </div>
-<div class="card">
-<h3>English</h3>
-<p>National tender-award statistics ({n} pages) and a daily corporate-registry diff archive ({bet_c['total']:,} records), each carrying its source, its licence and the anonymisation rules applied. No email is ever collected.</p>
-<div class="spacer"></div>
-<p><a href="/en/">Go to the English site →</a></p>
-</div>
-</div>
-<p class="small muted"><a href="/feeds/nta-diff.xml">RSS</a> · <a href="/data/">JSON</a> · <a href="{e(GITHUB_ORG)}" rel="noopener">GitHub</a> · 運営 / Operated by <a href="{e(OPERATOR_URL)}" rel="noopener">{e(OPERATOR_NAME)}</a></p>
-{attribution_block("ja", source_notices("ja"))}
 """
     return render_page(
         lang="ja",
         path="/",
-        title="Deltakura / デルタ蔵 — Japanese public-data histories",
-        desc_ja="日本の公開データの履歴を、方法論を公開したまま蓄積するアーカイブ。落札実績統計と法人番号 差分。",
-        desc_en="An open-methodology archive of Japanese public-data histories: tender award statistics and the corporate registry diff.",
+        title="Deltakura / デルタ蔵 — 消える前に、蔵へ。",
+        desc_ja="国が公開し、やがて消すデータを毎晩保存するアーカイブ。落札実績統計と法人番号の差分。",
+        desc_en="An archive of Japanese public data that the state publishes and later deletes: tender award statistics and the corporate registry diff.",
         body=body,
         alt_path="/en/",
     )
@@ -2589,17 +2103,20 @@ Sitemap: {BASE_URL}/sitemap.xml
 
 
 def build_llms_txt(bet_a_pages, bet_a_prov, bet_c, built_at):
+    estimated = any(not p["quantiles_exact"] for p in bet_a_pages)
+    quartiles = (
+        "medians and quartiles marked with a dagger are estimated from aggregated buckets"
+        if estimated
+        else "medians and quartiles are computed from the individual award prices"
+    )
     return f"""# Deltakura ({BRAND_JA})
 
-> An open-methodology archive of Japanese public-data histories, operated by
-> Sirevo (https://sirevo.jp/). Unofficial. Every number carries its source, its licence and its
-> retrieval date. Derived aggregates are CC BY 4.0; please keep the attribution
-> string, the licence name and the modification notice together when you quote
-> them.
+> An archive of Japanese public data that the state publishes and later deletes,
+> saved every night. Operated by {OPERATOR_NAME} ({OPERATOR_URL}). Unofficial: check
+> the original source before relying on a number. Derived aggregates are CC BY 4.0.
 
-Every figure below is derived from government open data used in modified form.
-Quote the three lines that belong to a figure - source, licence, modification -
-as one unit:
+When you quote a figure, keep its three parts together: source, licence,
+modification notice.
 
 - {PPORTAL_ATTRIB}
   Licence: {PPORTAL_LICENSE_NAME}. {PPORTAL_MODIFIED}
@@ -2607,49 +2124,40 @@ as one unit:
   Licence: {NTA_LICENSE_NAME}. {NTA_MODIFIED}
 
 Data last updated: awards {bet_a_prov['retrieved_at'][:10]}, registry diff {bet_c['last_day']}.
-Site built: {built_at[:10]} (UTC, like every date and timestamp on this site).
+Site built: {built_at[:10]}. All dates and times are UTC.
 
 ## Datasets
 
 - National tender award statistics: {bet_a_prov['records']:,} awards, FY2013-FY2026,
-  {len(bet_a_pages)} pages at /ja/bet-a/ and /en/bet-a/, one per purchasing sector and
-  fiscal year. JSON twin of every page under /data/bet-a/.
-  Known limits: the source publishes no predicted price, so there is NO award ratio
-  (落札率); the prefecture is the winner's registered head office, not the place of
-  performance; the sector says which ministry bought, not what was sold; sector-wide
-  medians and quartiles are estimated from pre-aggregated buckets (method stated on
-  every page and in every JSON file).
+  {len(bet_a_pages)} pages at /ja/bet-a/ and /en/bet-a/, one per buying ministry sector
+  and fiscal year. JSON twin of every page under /data/bet-a/.
+  Field notes: sector = the ministry that bought; prefecture = the winner's
+  registered head office; the source publishes no predicted price (予定価格), so
+  there is no award-ratio (落札率) field; {quartiles}.
   Attribution: {PPORTAL_ATTRIB}
   Licence: {PPORTAL_LICENSE_NAME}. {PPORTAL_MODIFIED}
 - Corporate-number registry diff archive: {bet_c['total']:,} records over
   {bet_c['n_files']} publication days ({bet_c['first_day']} to {bet_c['last_day']}),
   at /ja/bet-c/ and /en/bet-c/. JSON at /data/bet-c/daily.json, weekly RSS at
-  /feeds/nta-diff.xml. The publisher deletes each daily file after about 40 days.
-  Corporations and public bodies only; corporate numbers are not issued to sole
-  proprietors and no individual's name is held.
+  /feeds/nta-diff.xml. The publisher deletes each daily file after 40 days.
+  Corporations and public bodies only; no individual's name is held.
   Attribution: {NTA_ATTRIB}
   Licence: {NTA_LICENSE_NAME}. {NTA_MODIFIED}
-- Japan hiring first-seen index: announced, NOT published. The sources' reuse terms
-  have been reviewed and permit reuse under conditions; publication is a separate
-  approval that has not been given, so no record exists publicly and the collector
-  runs with publication disabled.
+- Japan hiring first-seen index: not published yet.
 
-## Rules this project holds itself to
+## Privacy facts
 
-- No email address is collected anywhere; there is no form on the site.
-- No cookies, and no analytics beacon: page visits are not counted. The only
-  counter is the "Notify me" button (one view and one click per product per
-  browser per UTC day, sent as a salted hash to the project's own endpoint;
-  reported as an upper bound).
-  If cookie-less analytics is added later, /ja/privacy.html and /en/privacy.html
-  and the Content-Security-Policy are updated in the same change.
+- No email collection, no form, no cookies, no analytics.
+- The only counter is the notify button: one view and one click per product,
+  browser and UTC day, stored as a salted hash for at most 25 hours; the count
+  is an upper bound.
 - Individuals, including sole proprietors, are masked at ingestion. No winner
-  directory is built for anyone.
-- Contact and removal requests: GitHub Issues only, {GITHUB_ISSUES}
+  directory exists.
+- Contact and removal requests: GitHub Issues, {GITHUB_ISSUES}
 
 ## Machine endpoints
 
-- /data/bet-a/index.json — list of every statistics page and its JSON endpoint
+- /data/bet-a/index.json — every statistics page and its JSON endpoint
 - /data/bet-a/<sector-slug>-fy<year>.json — one statistics page
 - /data/bet-c/daily.json — daily registry-diff counts
 - /data/site.json — build status and data freshness
@@ -2886,7 +2394,10 @@ def main(argv=None):
         path, _alt, doc = build_pricing(lang, built_at)
         emit(path, doc)
 
-        path, _alt, doc = build_privacy(lang, bet_a_prov, bet_c, built_at)
+        path, _alt, doc = build_privacy(
+            lang, bet_a_prov, bet_c, built_at,
+            any_estimated=any(not p["quantiles_exact"] for p in bet_a_pages),
+        )
         emit(path, doc)
 
     # ---- JSON endpoints
@@ -3066,12 +2577,12 @@ def main(argv=None):
             desc_ja="Deltakura の JSON エンドポイント一覧。各統計ページに対応する機械可読ファイルと、日次件数、週次 RSS。",
             desc_en="The Deltakura JSON endpoints: a machine-readable twin of every statistics page, the daily registry-diff counts, and the weekly RSS feed.",
             body=f"""
-<h1>JSON endpoints</h1>
-<p class="lede">Every page on this site has a machine-readable twin. No key, no rate limit today, CORS open. Each file carries its own provenance block: source, licence, attribution string, retrieval date, and the method used to derive anything that is not a raw count.</p>
+<h1 class="title">Data files (JSON)</h1>
+<p class="sub">A machine-readable twin of every statistics page. No key. CORS open.</p>
 {table("", ["Endpoint", "What it returns"], rows)}
-<p class="small">Derived aggregates are CC BY 4.0 — keep the <code>provenance.attribution</code> string when you redistribute. Counts are exact; anything estimated says so in the file.</p>
-{attribution_block("en", source_notices("en"))}
+<p class="fine">Keep <code>provenance.attribution</code> when you redistribute.</p>
 """,
+            attribution=source_notices("en"),
             alt_path="/data/",
         ),
     )
@@ -3089,7 +2600,7 @@ def main(argv=None):
             title="Not found | Deltakura",
             desc_ja="お探しのページは見つかりませんでした。",
             desc_en="That page does not exist on this site.",
-            body='<h1>404</h1><p class="lede">That page does not exist. / お探しのページは見つかりませんでした。</p>'
+            body='<h1 class="title">404</h1><p class="sub">That page does not exist. / お探しのページは見つかりませんでした。</p>'
             '<p><a href="/ja/">日本語トップ</a> · <a href="/en/">English home</a> · '
             '<a href="/data/">JSON endpoints</a></p>',
             alt_path="/404.html",
