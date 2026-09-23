@@ -20,7 +20,7 @@ export interface Env {
   /** Release marker surfaced by /v0/health. */
   RELEASE?: string;
 
-  /** Intent counters (Gate-1 metric). */
+  /** Intent counters (the pay-intent metric). */
   KV_INTENT?: KVNamespace;
   /** Public metrics rollups. */
   KV_METRICS?: KVNamespace;

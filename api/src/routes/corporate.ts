@@ -24,12 +24,18 @@ function language(url: URL): 'en' | 'ja' {
 
 export async function handleCorporateLookup(request: Request, env: Env, raw: string): Promise<Response> {
   const url = new URL(request.url);
-  const corporateNumber = normalizeCorporateNumber(decodeURIComponent(raw));
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    decoded = raw; // malformed %-escape: fall through to the 13-digit check, which refuses it
+  }
+  const corporateNumber = normalizeCorporateNumber(decoded.slice(0, 64));
   if (!/^\d{13}$/.test(corporateNumber)) {
     return errorResponse(
       400,
       'bad_request',
-      `"${raw}" is not a 13-digit 法人番号. Corporate numbers are exactly 13 digits (e.g. 1234567890123).`
+      `"${raw.slice(0, 40)}" is not a 13-digit 法人番号. Corporate numbers are exactly 13 digits (e.g. 1234567890123).`
     );
   }
 
@@ -41,7 +47,8 @@ export async function handleCorporateLookup(request: Request, env: Env, raw: str
   try {
     ({ changes, coverage } = await store.lookup(corporateNumber));
   } catch (err) {
-    return errorResponse(503, 'data_unavailable', err instanceof Error ? err.message : String(err));
+    console.error('data store', err);
+    return errorResponse(503, 'data_unavailable', 'The data store is temporarily unavailable.');
   }
 
   const result = buildLookupResult(corporateNumber, changes, {
@@ -89,7 +96,8 @@ export async function handleDiffSummary(request: Request, env: Env): Promise<Res
   try {
     data = await store.dailyCounts(from, to, byKind);
   } catch (err) {
-    return errorResponse(503, 'data_unavailable', err instanceof Error ? err.message : String(err));
+    console.error('data store', err);
+    return errorResponse(503, 'data_unavailable', 'The data store is temporarily unavailable.');
   }
 
   const result = buildDiffSummary(from, to, data.counts, data.byKind, {

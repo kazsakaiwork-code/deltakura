@@ -18,13 +18,15 @@ workers_dev = true
 [vars]
 DELTAKURA_MODE = "dev"
 RELEASE = "0.1.0"
-ALLOWED_ORIGINS = "https://deltakura.dev,https://www.deltakura.dev,https://deltakura-signals.web.app,https://deltakura-signals.firebaseapp.com"
+# Only origins the project controls. Add the custom domain once it is registered.
+ALLOWED_ORIGINS = "https://deltakura-signals.web.app,https://deltakura-signals.firebaseapp.com"
 RATE_LIMIT_PER_MINUTE = "60"
 INTENT_RATE_LIMIT_PER_MINUTE = "20"
 
-# IP_HASH_SALT is a secret, not a var:
-#   wrangler secret put IP_HASH_SALT
-# It only ever salts an in-memory hash that is discarded with the isolate.
+# IP_HASH_SALT is a secret, not a var - never put it in this file:
+#   wrangler secret put IP_HASH_SALT                 (and --env staging / production)
+# It salts the rate-limit hash (in memory only) and the intent de-duplication
+# hash (KV, 25 h TTL). In prod mode POST /v0/intent refuses to count without it.
 
 [[kv_namespaces]]
 binding = "KV_INTENT"
@@ -86,7 +88,7 @@ workers_dev = true
 [env.production.vars]
 DELTAKURA_MODE = "prod"
 RELEASE = "0.1.0"
-ALLOWED_ORIGINS = "https://deltakura.dev,https://www.deltakura.dev,https://deltakura-signals.web.app"
+ALLOWED_ORIGINS = "https://deltakura-signals.web.app,https://deltakura-signals.firebaseapp.com"
 RATE_LIMIT_PER_MINUTE = "60"
 INTENT_RATE_LIMIT_PER_MINUTE = "20"
 

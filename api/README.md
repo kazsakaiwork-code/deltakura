@@ -16,8 +16,8 @@ anonymous counter.
 | `GET` | `/v0/corporate/{corporate_number}` | one 法人番号: name, address 都道府県, 法人種別, latest change |
 | `GET` | `/v0/corporate/diff-summary` | daily register-change counts over a range |
 | `GET` | `/v0/feeds/nta-diff.json` | JSON Feed 1.1 of daily change volume |
-| `POST` | `/v0/intent` | record one pay-intent click (the Gate-1 metric) |
-| `GET` | `/v0/intent` | the intent counters, for the KPI dashboard |
+| `POST` | `/v0/intent` | record one pay-intent click |
+| `GET` | `/v0/intent` | the aggregate intent counters |
 
 `GET /` and `GET /v0` return the endpoint index.
 

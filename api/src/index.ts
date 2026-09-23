@@ -24,7 +24,8 @@ import {
   preflight,
   rateLimit,
   rateLimitHeaders,
-  readLimit
+  readLimit,
+  SECURITY_HEADERS
 } from './http.js';
 import { handleProcurementStats } from './routes/procurement.js';
 import { handleCorporateLookup, handleDiffSummary } from './routes/corporate.js';
@@ -103,7 +104,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const cors = corsHeaders(request, env);
     try {
-      if (request.method === 'OPTIONS') return preflight(request, env);
+      if (request.method === 'OPTIONS') return withHeaders(preflight(request, env), SECURITY_HEADERS);
 
       const url = new URL(request.url);
       const path = url.pathname.replace(/\/+$/, '') || '/';
@@ -130,10 +131,10 @@ export default {
       const response = await route(request, env, ctx, path);
       return withHeaders(response, { ...cors, ...limitHeaders });
     } catch (err) {
-      return withHeaders(
-        errorResponse(500, 'internal_error', err instanceof Error ? err.message : String(err)),
-        cors
-      );
+      // The detail goes to the Worker's own log, never to the client: an
+      // exception message can carry a binding name, a query or a stack frame.
+      console.error('unhandled', err);
+      return withHeaders(errorResponse(500, 'internal_error', 'Internal error.'), cors);
     }
   }
 };
@@ -154,7 +155,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext, path: st
   const corporate = /^\/v0\/corporate\/([^/]+)$/.exec(path);
   if (corporate) return handleCorporateLookup(request, env, corporate[1]);
 
-  return errorResponse(404, 'not_found', `No route for ${request.method} ${path}`, {
+  return errorResponse(404, 'not_found', `No route for ${request.method} ${path.slice(0, 120)}`, {
     endpoints: ROUTES.map((r) => `${r.method} ${r.path}`)
   });
 }

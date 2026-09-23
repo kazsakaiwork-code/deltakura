@@ -8,14 +8,12 @@
  * client, not a distributed quota - which is the right trade while the whole
  * service is free and read-only.
  */
-import { intVar, type Env } from './env.js';
+import { intVar, isProd, type Env } from './env.js';
 
-const DEFAULT_ORIGINS = [
-  'https://deltakura.dev',
-  'https://www.deltakura.dev',
-  'https://deltakura-signals.web.app',
-  'https://deltakura-signals.firebaseapp.com'
-];
+// Only origins the project actually controls. A domain is added here only once
+// it is registered to the project: an allowlisted domain that anyone else can
+// register is an origin an attacker could claim.
+const DEFAULT_ORIGINS = ['https://deltakura-signals.web.app', 'https://deltakura-signals.firebaseapp.com'];
 
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
@@ -44,6 +42,17 @@ export function corsHeaders(request: Request, env: Env): Record<string, string> 
   return base;
 }
 
+/**
+ * Sent on every response. The API returns data, never a document: nothing may
+ * sniff it into HTML, frame it or load a sub-resource from it.
+ */
+export const SECURITY_HEADERS: Record<string, string> = {
+  'x-content-type-options': 'nosniff',
+  'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
+  'referrer-policy': 'no-referrer',
+  'x-frame-options': 'DENY'
+};
+
 export function json(
   body: unknown,
   init: { status?: number; headers?: Record<string, string> } = {}
@@ -52,6 +61,7 @@ export function json(
     status: init.status ?? 200,
     headers: {
       'content-type': 'application/json; charset=utf-8',
+      ...SECURITY_HEADERS,
       ...init.headers
     }
   });
@@ -89,11 +99,40 @@ const MAX_TRACKED_CLIENTS = 20_000;
 let saltDay = '';
 let saltValue = '';
 
+/**
+ * The client address this Worker trusts. On Cloudflare, `CF-Connecting-IP` is
+ * set by the edge and cannot be supplied by the client; `X-Forwarded-For` can,
+ * so it is only consulted outside production (wrangler dev, tests).
+ */
+export function clientIp(request: Request, env: Env): string {
+  const cf = request.headers.get('cf-connecting-ip');
+  if (cf) return cf.trim();
+  if (isProd(env)) return 'unknown';
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
+/**
+ * Coarsen an address before it is hashed. IPv6 clients are routinely handed a
+ * whole /64, so keying on the full address would let one client rotate through
+ * 2^64 rate-limit buckets; `prefixV6` hextets are kept instead. IPv4 keeps
+ * `octetsV4` octets.
+ */
+export function ipPrefix(ip: string, opts: { octetsV4: number; hextetsV6: number }): string {
+  if (ip.includes(':')) {
+    const [head, tail = ''] = ip.toLowerCase().split('::');
+    const left = head ? head.split(':') : [];
+    const right = tail ? tail.split(':') : [];
+    const fill = Array(Math.max(0, 8 - left.length - right.length)).fill('0');
+    const full = [...left, ...fill, ...right].map((h) => h.replace(/^0+(?=.)/, ''));
+    return `${full.slice(0, opts.hextetsV6).join(':')}::/${opts.hextetsV6 * 16}`;
+  }
+  const parts = ip.split('.');
+  if (parts.length !== 4) return ip;
+  return `${parts.slice(0, opts.octetsV4).join('.')}/${opts.octetsV4 * 8}`;
+}
+
 async function clientKey(request: Request, env: Env): Promise<string> {
-  const ip =
-    request.headers.get('cf-connecting-ip') ??
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    'unknown';
+  const ip = ipPrefix(clientIp(request, env), { octetsV4: 4, hextetsV6: 4 });
   const day = new Date().toISOString().slice(0, 10);
   if (saltDay !== day) {
     saltDay = day;

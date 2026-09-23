@@ -7,7 +7,7 @@
  * posted `{product, page, cid, ts}` while the Worker read `{product, kind,
  * client_id}`. Every POST would have been refused with 400 unknown_product, the
  * `view` denominator would never have been collected, and `intent_rate_14d` —
- * one of the two Gate-1 conditions — would have read zero.
+ * the pay-intent metric — would have read zero.
  *
  * So this test does not restate either side. It reads `site/build.py`, takes the
  * product ids and the POST body shape the generator actually emits, and drives
@@ -93,7 +93,7 @@ describe('site <-> Worker intent contract', () => {
       expect(kv.store.get(`count:view:${product}:total`), product).toBe('1');
     }
 
-    // The Gate-1 metric is computable end to end: a denominator exists.
+    // The pay-intent metric is computable end to end: a denominator exists.
     const { body: summary } = await call(h, '/v0/intent?days=14');
     expect(summary.views).toBe(products.length);
     expect(summary.clicks).toBe(products.length);

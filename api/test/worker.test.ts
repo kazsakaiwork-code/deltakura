@@ -58,13 +58,21 @@ describe('routing and metadata', () => {
 describe('CORS', () => {
   it('echoes an allowed origin and answers preflight', async () => {
     const h = harness();
-    const allowed = await call(h, '/v0/health', { origin: 'https://deltakura.dev' });
-    expect(allowed.headers.get('access-control-allow-origin')).toBe('https://deltakura.dev');
+    const allowed = await call(h, '/v0/health', { origin: 'https://deltakura-signals.web.app' });
+    expect(allowed.headers.get('access-control-allow-origin')).toBe('https://deltakura-signals.web.app');
     expect(allowed.headers.get('vary')).toBe('Origin');
 
-    const options = await call(h, '/v0/intent', { method: 'OPTIONS', origin: 'https://deltakura.dev' });
+    const options = await call(h, '/v0/intent', { method: 'OPTIONS', origin: 'https://deltakura-signals.web.app' });
     expect(options.status).toBe(204);
     expect(options.headers.get('access-control-allow-methods')).toContain('POST');
+  });
+
+  it('does not trust a domain the project has not registered', async () => {
+    for (const origin of ['https://deltakura.dev', 'https://www.deltakura.dev']) {
+      resetRateLimits();
+      const { headers } = await call(harness(), '/v0/health', { origin });
+      expect(headers.get('access-control-allow-origin'), origin).toBeNull();
+    }
   });
 
   it('refuses an origin that is not on the list', async () => {
@@ -82,7 +90,7 @@ describe('CORS', () => {
     const ok = await call(h, '/v0/health', { origin: 'https://two.example' });
     expect(ok.headers.get('access-control-allow-origin')).toBe('https://two.example');
     resetRateLimits();
-    const no = await call(h, '/v0/health', { origin: 'https://deltakura.dev' });
+    const no = await call(h, '/v0/health', { origin: 'https://deltakura-signals.web.app' });
     expect(no.headers.get('access-control-allow-origin')).toBeNull();
   });
 });

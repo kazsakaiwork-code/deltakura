@@ -45,7 +45,8 @@ export async function handleProcurementStats(request: Request, env: Env): Promis
   try {
     dataset = await store.dataset();
   } catch (err) {
-    return errorResponse(503, 'data_unavailable', err instanceof Error ? err.message : String(err));
+    console.error('data store', err);
+    return errorResponse(503, 'data_unavailable', 'The data store is temporarily unavailable.');
   }
 
   try {
@@ -62,6 +63,7 @@ export async function handleProcurementStats(request: Request, env: Env): Promis
         available: err.available
       });
     }
-    return errorResponse(500, 'query_failed', err instanceof Error ? err.message : String(err));
+    console.error('query', err);
+    return errorResponse(500, 'query_failed', 'The query could not be answered.');
   }
 }

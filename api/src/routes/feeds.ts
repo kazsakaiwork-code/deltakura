@@ -31,7 +31,8 @@ export async function handleNtaDiffFeed(request: Request, env: Env): Promise<Res
   try {
     data = await store.dailyCounts(from, to, true);
   } catch (err) {
-    return errorResponse(503, 'data_unavailable', err instanceof Error ? err.message : String(err));
+    console.error('data store', err);
+    return errorResponse(503, 'data_unavailable', 'The data store is temporarily unavailable.');
   }
 
   const home = `${url.origin}/v0`;
