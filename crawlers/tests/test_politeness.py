@@ -98,6 +98,20 @@ def test_robots_disallow_blocks_the_fetch():
         raise AssertionError("a Disallow: / host was fetched anyway")
 
 
+def test_unreachable_robots_txt_means_full_disallow():
+    # RFC 9309 2.3.1.4: a 5xx (or 429) on robots.txt is "unreachable", and the
+    # crawler must assume complete disallow rather than "no directives".
+    for status in (500, 503, 429):
+        s = _session({"https://down.example/robots.txt": _Resp(status=status, body=b"")})
+        try:
+            s.get("https://down.example/data.csv")
+        except http.RobotsDisallowed:
+            pass
+        else:
+            raise AssertionError(f"fetched despite robots.txt answering {status}")
+        assert not any(c.endswith("/data.csv") for c in s._session.calls)  # type: ignore[attr-defined]
+
+
 def test_robots_verdict_reports_no_robots_file():
     s = _session({"https://open.example/robots.txt": _Resp(status=404, body=b"")})
     assert "no robots.txt" in s.robots_verdict("https://open.example/x")
@@ -113,7 +127,7 @@ def test_user_agent_identifies_the_bot_and_is_not_a_browser():
 
 def test_user_agent_contact_url_is_the_github_repo():
     # The contact URL must resolve before any crawl above the prototype cap.
-    # deltakura.dev is unregistered and this phase spends nothing, so the
+    # deltakura.dev is not registered, so the
     # interim contact is the project's GitHub repository.
     assert "(+https://github.com/kazsakaiwork-code/deltakura)" in http.USER_AGENT
     assert "deltakura.dev" not in http.USER_AGENT

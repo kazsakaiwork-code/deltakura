@@ -100,6 +100,13 @@ describe('MCP surface', () => {
     expect(summary.payload.message).toContain('remote not available yet');
   });
 
+  it('refuses a date range longer than 400 days', async () => {
+    const client = await connect();
+    const huge = await call(client, 'jp_corporate_diff_summary', { from: '1900-01-01', to: '9999-12-31' });
+    expect(huge.isError).toBe(true);
+    expect(huge.payload.message).toContain('maximum is 400');
+  });
+
   it('validates the date range before touching any data', async () => {
     const client = await connect({ DELTAKURA_DATA_DIR: fixture.dir } as NodeJS.ProcessEnv);
     const bad = await call(client, 'jp_corporate_diff_summary', { from: '01/09/2026', to: '2026-09-03' });

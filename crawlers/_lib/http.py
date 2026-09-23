@@ -37,8 +37,7 @@ from typing import Dict, Optional
 import requests
 
 # The contact URL must resolve before any crawl above the
-# prototype cap. `deltakura.dev` is an unregistered domain (buying it is a later
-# phase; this one spends nothing), so the interim contact is the project's GitHub
+# prototype cap. `deltakura.dev` is not registered, so the interim contact is the project's GitHub
 # repository, whose issue tracker is also where removal requests are filed.
 #
 # The URL resolves for everyone once the repository is public - no code change
@@ -196,6 +195,13 @@ class PoliteSession:
             resp = self._session.get(origin + "/robots.txt", timeout=30, allow_redirects=False)
             self._last_hit[parts.netloc] = time.monotonic()
             self._bump_count(parts.netloc)
+            if resp.status_code == 429 or resp.status_code >= 500:
+                # RFC 9309 2.3.1.4: an unreachable robots.txt means "assume
+                # complete disallow". Not cached, so the next run asks again.
+                raise RobotsDisallowed(
+                    f"{origin}/robots.txt answered HTTP {resp.status_code}; "
+                    "treating the host as fully disallowed for this run"
+                )
             ctype = (resp.headers.get("Content-Type") or "").lower()
             if resp.status_code == 200 and "html" not in ctype and "json" not in ctype:
                 body = resp.text

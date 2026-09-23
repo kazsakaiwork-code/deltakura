@@ -758,7 +758,7 @@ JS = """/* Deltakura intent button. No cookies, no email, no third party.
    build time against INTENT_PRODUCTS in site/build.py, which is asserted
    against the Worker's own list by api/test/intent-contract.test.ts.
 
-   `kind` is why the Gate-1 metric exists at all: intent_rate_14d is
+   `kind` is why the pay-intent metric exists at all: intent_rate_14d is
    clicks / views, so a page that never reports a view has no denominator. One
    view per product per page load; the Worker de-duplicates per client and day.
 
@@ -882,7 +882,8 @@ def render_page(
     for obj in jsonld or []:
         blocks += (
             '<script type="application/ld+json">'
-            + json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+            # "<" is escaped so that no string in the data can close the element.
+            + json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
             + "</script>\n"
         )
 

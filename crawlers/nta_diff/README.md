@@ -151,7 +151,7 @@ python crawlers/nta_diff/run_nightly.py
 `run_nightly.py` takes no arguments, derives every path from its own location
 and always appends a row to `$DELTAKURA_DATA_DIR/nta/run_log.csv`, including on
 failure. Any scheduler that can run a command at a fixed time will drive it —
-cron, a systemd timer, or a desktop task scheduler. Two schedulers may safely
+cron, a systemd timer or a CI schedule. Two schedulers may safely
 run at once: the collector is idempotent and the second one of an evening finds
 nothing to fetch.
 

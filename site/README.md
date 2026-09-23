@@ -159,7 +159,7 @@ operator approval.
 | `BASE_URL` | `https://deltakura-signals.web.app` | the Firebase project — feeds canonical URLs, sitemap, JSON-LD |
 | `GITHUB_ORG` / `GITHUB_ISSUES` / `GITHUB_CORE` / `GITHUB_SITE` | `github.com/kazsakaiwork-code/deltakura/…` | set. They resolve for everyone once the repository is made public. |
 | `INTENT_ENDPOINT` (`assets/config.js`) | `""` | the Cloudflare Worker |
-| `.firebaserc` `projects.default` | `REPLACE-WITH-FIREBASE-PROJECT-ID` | the Firebase project |
+| `.firebaserc` `projects.default` | `deltakura-signals` | the Firebase project (the only project id the security scan accepts) |
 
 There is **no analytics beacon**, and both `/privacy.html` pages say exactly
 that: page visits are not counted, the only scripts are the two self-hosted

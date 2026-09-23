@@ -58,7 +58,7 @@ sample location string — not a claim from a web page.
 
 ## Why a registry is needed at all
 
-The week-1 prototype established that the ATS payloads cannot tell you the
+The first prototype established that the ATS payloads cannot tell you the
 country. The list endpoints return one free-text location per posting, and on
 Japanese boards that string is frequently a work style rather than a place: 83
 of 85 postings on one board said "Hybrid". Country attribution therefore comes
@@ -119,7 +119,7 @@ reachable on `api.lever.co`; a board lives on one instance or the other. They
 are a distinct `ats` value (`lever_eu`) rather than a fallback, so the request
 count stays honest per host.
 
-## Deviation from the week-1 request cap — needs a ruling
+## Request cap for verification sweeps
 
 Our own crawl rules cap prototype crawling at **20 requests per host per day** until
 the bot contact URL resolves. Verifying 235 candidates and then tracking 135

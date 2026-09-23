@@ -15,6 +15,9 @@ import { isIsoDate } from './query/nta.js';
 export const SERVER_NAME = 'io.github.kazsakaiwork-code/jp-public-signals';
 export const SERVER_VERSION = '0.1.0';
 
+/** Same cap as the Worker's /v0/corporate/diff-summary: bounds memory and output size. */
+const MAX_RANGE_DAYS = 400;
+
 const READ_ONLY = {
   readOnlyHint: true,
   destructiveHint: false,
@@ -186,6 +189,10 @@ export function createServer(deps: ServerDeps = {}): McpServer {
           throw new Error(`from and to must be ISO dates (YYYY-MM-DD); got "${from}" and "${to}"`);
         }
         if (from > to) throw new Error(`"from" (${from}) is after "to" (${to})`);
+        const spanDays = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
+        if (spanDays > MAX_RANGE_DAYS) {
+          throw new Error(`range is ${spanDays} days; the maximum is ${MAX_RANGE_DAYS} (the same cap as the hosted API)`);
+        }
         return textResult(await diffSummary(config, from, to, { language, groupByChangeKind: group_by_change_kind }));
       } catch (err) {
         return errorResult(err);
