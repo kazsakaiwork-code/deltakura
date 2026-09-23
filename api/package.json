@@ -1,0 +1,26 @@
+{
+  "name": "@deltakura/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deltakura v0 read API — a Cloudflare Worker over Japanese public open data. Not published to any registry; deployed only.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build-data": "node scripts/build-data.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "dev": "wrangler dev --local",
+    "dry-run": "wrangler deploy --env= --dry-run --outdir .wrangler/dry-run",
+    "deploy": "echo \"deploy is deliberately not wired: it needs a Cloudflare account and a per-item operator approval\" && exit 1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260921.1",
+    "@types/node": "^22.20.4",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.136.0"
+  }
+}

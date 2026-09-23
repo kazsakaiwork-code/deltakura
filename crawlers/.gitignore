@@ -1,0 +1,34 @@
+# Collectors. Part of the `kazsakaiwork-code/deltakura` monorepo; the root
+# .gitignore carries the rules that matter most. These are the local ones.
+
+# Secrets and credentials - there should never be any, and if one appears it
+# must not be the git history that finds out.
+*.env
+.env*
+*.token
+*.key
+*.pem
+*.pfx
+credentials*
+secrets*
+
+# Local/derived
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.log
+
+# Scratch copies of publisher data. The collectors write to ../data/, but a
+# stray local copy here would be published with the code.
+**/raw/
+**/state/
+**/lookup/
+*.zip
+*.csv.gz
+
+# Verification scratch: candidate lists carry unverified third-party claims and
+# the run-by-run results file is operational, not product.
+verification_results.csv

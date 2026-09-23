@@ -1,0 +1,54 @@
+# Deltakura monorepo. This is the ONLY repository the project pushes.
+#
+# The rule that matters most is at the bottom: `data/` is ignored except
+# `data/published/`. Everything the collectors write — publisher originals, the
+# per-record normalized layer, crawl state, lookup tables, run logs — lives
+# outside this repository entirely, under `$DELTAKURA_DATA_DIR` (default
+# `../data`). If someone ever points that variable at a directory inside the
+# checkout, this rule is what stops it being committed.
+
+# ------------------------------------------------------------- build output
+node_modules/
+dist/
+*.tsbuildinfo
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# `python site/build.py` recreates the whole site in about a second, so the
+# generated tree is not versioned; committing it would make every content
+# change an unreviewable 350-file diff.
+site/public/
+
+# Local emulator and CLI state.
+.wrangler/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.runtimeconfig.json
+npm-debug.log*
+*.log
+
+# ---------------------------------------------------------------- secrets
+# There should never be any in this tree. If one appears, it must not be the
+# git history that finds out.
+.env
+*.env
+.env.*
+.dev.vars
+!.dev.vars.example
+*.token
+*.key
+*.pem
+*.pfx
+credentials*
+secrets*
+
+# ------------------------------------------------------------------- data
+# Committed: data/published/ only — the aggregates the site, the Worker and the
+# npm package are built from. Nothing record-level, nothing raw.
+/data/*
+!/data/published/

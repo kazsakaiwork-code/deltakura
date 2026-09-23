@@ -1,0 +1,236 @@
+ats,board_token,company_name,company_domain,hq_country,japan_hiring_evidence,source_url
+greenhouse,paypay,PayPay,paypay.ne.jp,JP,"85 live jobs, Japanese titles, Tokyo",https://job-boards.greenhouse.io/paypay
+greenhouse,paypaycard,PayPay Card,paypay-card.co.jp,JP,Backend engineer and PMO roles; Tokyo/Fukuoka hybrid,https://job-boards.greenhouse.io/paypaycard
+greenhouse,paypaysec,PayPay Securities,paypay-sec.co.jp,JP,"iOS/Android engineer roles, Tokyo",https://job-boards.greenhouse.io/paypaysec
+greenhouse,paidyinc,Paidy,paidy.com,JP,Board titled Paidy Inc / Paidy合同会社,https://job-boards.greenhouse.io/paidyinc
+greenhouse,siei,Sony Interactive Entertainment,sie.com,JP,"All board jobs located Japan, Tokyo",https://job-boards.greenhouse.io/siei
+greenhouse,pdi,Polyphony Digital,polyphony.co.jp,JP,"18 jobs Tokyo/Fukuoka, JP-language titles",https://job-boards.greenhouse.io/pdi
+greenhouse,tangogameworks,Tango Gameworks,tangogameworks.com,JP,All 14 jobs Tokyo,https://job-boards.greenhouse.io/tangogameworks
+greenhouse,pubgtokyo,PUBG Tokyo (KRAFTON),krafton.com,JP,PUBG JAPAN operations staff posting,https://job-boards.greenhouse.io/pubgtokyo
+greenhouse,rakutenmedicaljpn,Rakuten Medical Japan,rakuten-med.com,JP,Board named Japan; Legal Manager (Japan),https://job-boards.greenhouse.io/rakutenmedicaljpn
+greenhouse,moon,Moon Creative Lab,mooncreativelab.com,JP,"Roles at Chiyoda, Tokyo",https://job-boards.greenhouse.io/moon
+greenhouse,zeals,Zeals,zeals.co.jp,JP,"SRE role, location Japan - Tokyo",https://job-boards.greenhouse.io/zeals
+greenhouse,omakaseai,Omakase.ai,omakase.ai,JP,"Robotics SWE, Tokyo, Japanese preferred",https://job-boards.greenhouse.io/omakaseai
+greenhouse,ogilvyjapan,Ogilvy Japan,ogilvy.co.jp,JP,"Dedicated Japan-office board, Tokyo roles",https://job-boards.greenhouse.io/ogilvyjapan
+greenhouse,oktajp,Okta Japan,okta.com,JP,"All board jobs Tokyo; Director, Japan Sales",https://job-boards.greenhouse.io/oktajp
+greenhouse,japan,Mirakl Japan,mirakl.com,JP,Board titled Jobs at Mirakl - Japan,https://job-boards.greenhouse.io/japan
+greenhouse,startale,Startale,startale.com,JP,"Director of Sales, Startale Japan",https://job-boards.greenhouse.io/startale
+greenhouse,gitai,GITAI,gitai.tech,US,Japan-founded space robotics company,https://job-boards.greenhouse.io/gitai
+greenhouse,mercari,Mercari (US entity),mercari.com,JP,Group board; JP hiring is in-house,https://job-boards.greenhouse.io/mercari
+greenhouse,alpaca,Alpaca,alpaca.markets,US,"Broker-Dealer Ops Specialist, Japan-based",https://job-boards.greenhouse.io/alpaca
+greenhouse,figma,Figma,figma.com,US,"12+ roles titled (Tokyo, Japan)",https://job-boards.greenhouse.io/figma
+greenhouse,coupang,Coupang,coupang.com,KR,"10+ Tokyo, Japan roles",https://job-boards.greenhouse.io/coupang
+greenhouse,anthropic,Anthropic,anthropic.com,US,"Enterprise AE Japan; Head of Partnerships, Japan (Tokyo)",https://job-boards.greenhouse.io/anthropic
+greenhouse,grafanalabs,Grafana Labs,grafana.com,US,"Senior Solutions Engineer Tokyo, Japan with a JPY band",https://job-boards.greenhouse.io/grafanalabs
+greenhouse,glance,Glance,glance.com,IN,"Multiple Tokyo, Japan commerce/growth roles",https://job-boards.greenhouse.io/glance
+greenhouse,databricks,Databricks,databricks.com,US,12+ Tokyo roles,https://job-boards.greenhouse.io/databricks
+greenhouse,datadog,Datadog,datadoghq.com,US,Country Manager and AE/SE roles in Tokyo,https://job-boards.greenhouse.io/datadog
+greenhouse,cloudflare,Cloudflare,cloudflare.com,US,"Senior Sales Manager, Japan (based in Tokyo)",https://job-boards.greenhouse.io/cloudflare
+greenhouse,zscaler,Zscaler,zscaler.com,US,"16 Japan roles, Tokyo and Remote-Osaka",https://job-boards.greenhouse.io/zscaler
+greenhouse,tanium,Tanium,tanium.com,US,8 roles across Tokyo/Osaka/Nagoya,https://job-boards.greenhouse.io/tanium
+greenhouse,newrelic,New Relic,newrelic.com,US,"7 Tokyo roles including Country Manager, Japan",https://job-boards.greenhouse.io/newrelic
+greenhouse,okta,Okta,okta.com,US,"Director, Sales Development, Japan - Tokyo",https://job-boards.greenhouse.io/okta
+greenhouse,verkada,Verkada,verkada.com,US,Account Executive roles in Osaka and Tokyo,https://job-boards.greenhouse.io/verkada
+greenhouse,asana,Asana,asana.com,US,"Corporate AE, CSM and People Partner APJ in Tokyo",https://job-boards.greenhouse.io/asana
+greenhouse,gitlab,GitLab,about.gitlab.com,US,"Commercial AE Japan; Senior Ecosystem Sales Manager, Japan",https://job-boards.greenhouse.io/gitlab
+greenhouse,elastic,Elastic,elastic.co,NL,Inside Account Executive Japan - Tokyo,https://job-boards.greenhouse.io/elastic
+greenhouse,dropbox,Dropbox,dropbox.com,US,BDR Japan (Remote); Technical Solutions Specialist (Japan),https://job-boards.greenhouse.io/dropbox
+greenhouse,braze,Braze,braze.com,US,AE Commercial/Enterprise Tokyo; Recruiter APAC and Japan,https://job-boards.greenhouse.io/braze
+greenhouse,rubrik,Rubrik,rubrik.com,US,Mid Market AE Tokyo; Senior CSE Tokyo,https://job-boards.greenhouse.io/rubrik
+greenhouse,purestorage,Pure Storage,purestorage.com,US,AE Emerging Japan; Sales Enablement BP Tokyo,https://job-boards.greenhouse.io/purestorage
+greenhouse,twilio,Twilio,twilio.com,US,Japan Communications Manager; Field Marketing Manager Japan,https://job-boards.greenhouse.io/twilio
+greenhouse,qualtrics,Qualtrics,qualtrics.com,US,"Enterprise AE and Technical Success Manager, Japan",https://job-boards.greenhouse.io/qualtrics
+greenhouse,workato,Workato,workato.com,US,"Global Account Director and interns, Tokyo, Japan",https://job-boards.greenhouse.io/workato
+greenhouse,realtimeboardglobal,Miro,miro.com,NL,Solutions Engineer/Architect Tokyo; Digital Marketing Manager Japan,https://job-boards.greenhouse.io/realtimeboardglobal
+greenhouse,notion,Notion,notion.com,US,"Customer Success Manager, Dedicated, Japan - Tokyo",https://job-boards.greenhouse.io/notion
+greenhouse,wizinc,Wiz,wiz.io,US,"Technical Account Manager, Japan; 6 Tokyo roles",https://job-boards.greenhouse.io/wizinc
+greenhouse,clickhouse,ClickHouse,clickhouse.com,US,Senior Technical Customer Support Engineer - Japan,https://job-boards.greenhouse.io/clickhouse
+greenhouse,dbtlabsinc,dbt Labs,getdbt.com,US,"Sales Development Representative, Japan",https://job-boards.greenhouse.io/dbtlabsinc
+greenhouse,gleanwork,Glean,glean.com,US,"Strategic AE Japan - Tokyo; Content Marketing Manager, Japan",https://job-boards.greenhouse.io/gleanwork
+greenhouse,jfrog,JFrog,jfrog.com,IL,"Business Development Representative - Tokyo, Japan",https://job-boards.greenhouse.io/jfrog
+greenhouse,dataiku,Dataiku,dataiku.com,FR,"Enterprise AE, Japan FSI - Tokyo",https://job-boards.greenhouse.io/dataiku
+greenhouse,celonis,Celonis,celonis.com,DE,"People Country Lead Japan, Tokyo office hybrid",https://job-boards.greenhouse.io/celonis
+greenhouse,similarweb,Similarweb,similarweb.com,IL,"Head of Sales, Japan and Korea (Tokyo office)",https://job-boards.greenhouse.io/similarweb
+greenhouse,pitchbookdata,PitchBook,pitchbook.com,US,"Account Manager, Tokyo Prefecture, Japan",https://job-boards.greenhouse.io/pitchbookdata
+greenhouse,doubleverify,DoubleVerify,doubleverify.com,US,"Director of Marketing, Tokyo",https://job-boards.greenhouse.io/doubleverify
+greenhouse,dialpad,Dialpad,dialpad.com,US,RVP Japan Sales; CSM Japan - Tokyo,https://job-boards.greenhouse.io/dialpad
+greenhouse,hudl,Hudl,hudl.com,US,"Japanese-speaking CSM, Tokyo office",https://job-boards.greenhouse.io/hudl
+greenhouse,recordedfuture,Recorded Future,recordedfuture.com,US,Sales Engineer Japan; Associate Account Director Japan,https://job-boards.greenhouse.io/recordedfuture
+greenhouse,knowbe4,KnowBe4,knowbe4.com,US,5 Tokyo roles including CSM,https://job-boards.greenhouse.io/knowbe4
+greenhouse,cybereason,Cybereason,cybereason.com,US,"Backend Engineer, Product Designer, QA in Tokyo",https://job-boards.greenhouse.io/cybereason
+greenhouse,halcyon,Halcyon,halcyon.ai,US,Commercial AE Japan; Solutions Architect Japan,https://job-boards.greenhouse.io/halcyon
+greenhouse,sayari,Sayari,sayari.com,US,Forward Deployed Engineer Japan; Senior CSM Japan,https://job-boards.greenhouse.io/sayari
+greenhouse,censys,Censys,censys.io,US,"Account Executive, Japan",https://job-boards.greenhouse.io/censys
+greenhouse,armissecurity,Armis Security,armis.com,US,Enterprise Account Executive - Japan,https://job-boards.greenhouse.io/armissecurity
+greenhouse,acquia,Acquia,acquia.com,US,"Technical Account Manager, Remote - Japan",https://job-boards.greenhouse.io/acquia
+greenhouse,canonical,Canonical,canonical.com,GB,Tokyo Office Administrator; Embedded Linux Consultant Japan,https://job-boards.greenhouse.io/canonical
+greenhouse,udemy,Udemy,udemy.com,US,"Senior Pre-Sales Engineer, Remote, Japan",https://job-boards.greenhouse.io/udemy
+greenhouse,behavox,Behavox,behavox.com,US,"Enterprise AE, Tokyo, native Japanese required",https://job-boards.greenhouse.io/behavox
+greenhouse,shifttechnology,Shift Technology,shift-technology.com,FR,"Sales Executive B2B Insurance, Japan - Tokyo",https://job-boards.greenhouse.io/shifttechnology
+greenhouse,appier,Appier,appier.com,TW,Many Tokyo engineering/ML roles with visa sponsorship,https://job-boards.greenhouse.io/appier
+greenhouse,speechify,Speechify,speechify.com,US,"SWE Platform Yokohama, Japan; Data Infra Tokyo",https://job-boards.greenhouse.io/speechify
+greenhouse,appliedintuition,Applied Intuition,appliedintuition.com,US,Tokyo operations and relocation roles,https://job-boards.greenhouse.io/appliedintuition
+greenhouse,tenstorrent,Tenstorrent,tenstorrent.com,US,RTL Engineer on-site Tokyo; Early Talent Recruiter Tokyo,https://job-boards.greenhouse.io/tenstorrent
+greenhouse,fireblocks,Fireblocks,fireblocks.com,US,"CSM Japan, Sales Director Japan, Tokyo Prefecture",https://job-boards.greenhouse.io/fireblocks
+greenhouse,flexport,Flexport,flexport.com,US,Senior Manager Ocean Gateway Japan; Osaka/Kansai AE,https://job-boards.greenhouse.io/flexport
+greenhouse,agoda,Agoda,agoda.com,SG,10 Tokyo roles; Director of Strategic Alliances (Japan),https://job-boards.greenhouse.io/agoda
+greenhouse,guidepoint,Guidepoint,guidepoint.com,US,8 roles at 東京都; Client Service Intern 大阪市,https://job-boards.greenhouse.io/guidepoint
+greenhouse,unity3d,Unity,unity.com,US,"Senior Account Executive, Industry, Tokyo, Japan",https://job-boards.greenhouse.io/unity3d
+greenhouse,scopely,Scopely,scopely.com,US,7 JP-Tokyo roles,https://job-boards.greenhouse.io/scopely
+greenhouse,niantic,Niantic,nianticlabs.com,US,"People Ops Specialist and Head of Corporate Ops, Tokyo",https://job-boards.greenhouse.io/niantic
+greenhouse,2k,2K Games,2k.com,US,"Associate Manager, Content Localization, Tokyo, Chiyoda",https://job-boards.greenhouse.io/2k
+greenhouse,hasbro,Hasbro,hasbro.com,US,"Commercial Director, Tokyo Prefecture, Japan",https://job-boards.greenhouse.io/hasbro
+greenhouse,crunchyroll,Crunchyroll,crunchyroll.com,US,"Senior Producer, Anime Co-Production, Tokyo, Japan",https://job-boards.greenhouse.io/crunchyroll
+greenhouse,wpp,WPP,wpp.com,GB,13+ Tokyo roles across group agencies,https://job-boards.greenhouse.io/wpp
+greenhouse,pinterest,Pinterest,pinterest.com,US,"Head of Verticals, Tokyo, JP",https://job-boards.greenhouse.io/pinterest
+greenhouse,moloco,Moloco,moloco.com,US,"Growth Director, Tokyo, Japan",https://job-boards.greenhouse.io/moloco
+greenhouse,thetradedesk,The Trade Desk,thetradedesk.com,US,"Account Executive (Business Development), Tokyo",https://job-boards.greenhouse.io/thetradedesk
+greenhouse,appsflyer,AppsFlyer,appsflyer.com,IL,"Growth Account Manager, Tokyo",https://job-boards.greenhouse.io/appsflyer
+greenhouse,fivetran,Fivetran,fivetran.com,US,"Customer Solutions Architect, Remote, Japan",https://job-boards.greenhouse.io/fivetran
+greenhouse,duolingo,Duolingo,duolingo.com,US,"Consumer Product Lead, Tokyo, Japan",https://job-boards.greenhouse.io/duolingo
+greenhouse,cognite,Cognite,cognite.com,NO,"Director, Value Engineering, Japan (Tokyo)",https://job-boards.greenhouse.io/cognite
+greenhouse,telnyx54,Telnyx,telnyx.com,US,"Forward Deployed Engineer, Japan - Tokyo",https://job-boards.greenhouse.io/telnyx54
+greenhouse,hightouch,Hightouch,hightouch.com,US,"Enterprise Account Executive, APAC (Japan)",https://job-boards.greenhouse.io/hightouch
+greenhouse,xai,xAI,x.ai,US,"Security Engineer, Detection and Response (Japan)",https://job-boards.greenhouse.io/xai
+greenhouse,wayve,Wayve,wayve.ai,GB,"Principal Application Software Engineer, relocation to Tokyo",https://job-boards.greenhouse.io/wayve
+greenhouse,andurilindustries,Anduril Industries,anduril.com,US,"Manager, Japan Communications",https://job-boards.greenhouse.io/andurilindustries
+greenhouse,cerebrassystems,Cerebras Systems,cerebras.ai,US,INFERRED: board verified; Japan partnership presence,https://job-boards.greenhouse.io/cerebrassystems
+greenhouse,silananotechnologies,Sila Nanotechnologies,silanano.com,US,Account Director role for Japan,https://job-boards.greenhouse.io/silananotechnologies
+greenhouse,elementbiosciences,Element Biosciences,elementbiosciences.com,US,"Field Service Engineer, Japan (Tokyo Prefecture)",https://job-boards.greenhouse.io/elementbiosciences
+greenhouse,atricure,AtriCure,atricure.com,US,"Marketing Manager, Japan (Osaka and Tokyo)",https://job-boards.greenhouse.io/atricure
+greenhouse,pingcap,PingCAP,pingcap.com,US,Technical Support Engineer Tokyo; Solution Architect JP,https://job-boards.greenhouse.io/pingcap
+greenhouse,smartsheet,Smartsheet,smartsheet.com,US,"Technical Support Lead, Japan (Tokyo)",https://job-boards.greenhouse.io/smartsheet
+greenhouse,stackadapt,StackAdapt,stackadapt.com,CA,"Senior Sales Manager, Japan",https://job-boards.greenhouse.io/stackadapt
+greenhouse,inmobi,InMobi,inmobi.com,IN,APAC marketing team with a Tokyo office,https://job-boards.greenhouse.io/inmobi
+greenhouse,teads1,Teads,teads.com,FR,Commercial Director for the Japan advertising ecosystem,https://job-boards.greenhouse.io/teads1
+greenhouse,lighthouse,Lighthouse,mylighthouse.com,GB,"Market Manager, Japan",https://job-boards.greenhouse.io/lighthouse
+greenhouse,monsterenergyapac,Monster Energy APAC,monsterenergy.com,US,"Trade Marketing Manager (Japan), Tokyo",https://job-boards.greenhouse.io/monsterenergyapac
+greenhouse,axs,AXS,axs.com,US,"Marketing Manager, Tokyo office",https://job-boards.greenhouse.io/axs
+greenhouse,headoutlinkedin,Headout,headout.com,US,"Business Development Manager, Japan, Osaka or Tokyo",https://job-boards.greenhouse.io/headoutlinkedin
+greenhouse,thinkmarkets,ThinkMarkets,thinkmarkets.com,AU,"Marketing Manager, Tokyo Prefecture, Japan",https://job-boards.greenhouse.io/thinkmarkets
+greenhouse,fusionworldwide,Fusion Worldwide,fusionww.com,US,Purchasing Representative (Tokyo),https://job-boards.greenhouse.io/fusionworldwide
+greenhouse,techstars57,Techstars,techstars.com,US,"Operations Associate, Tokyo accelerator",https://job-boards.greenhouse.io/techstars57
+greenhouse,privateblock,Block,block.xyz,US,"Seller Onboarding Specialist, bilingual JP/EN, Tokyo",https://job-boards.greenhouse.io/privateblock
+greenhouse,rzr,RZR Global,rzr.global,US,"Account Executive JP, dedicated Japan market sales",https://job-boards.greenhouse.io/rzr
+greenhouse,lazarusenterprises,Lazarus,lazarusai.com,US,"Software Engineer (Japan Contract), Tokyo Prefecture",https://job-boards.greenhouse.io/lazarusenterprises
+greenhouse,rhombuspower,Rhombus Power,rhombuspower.com,US,Japanese Localization Internship,https://job-boards.greenhouse.io/rhombuspower
+greenhouse,mesh,Mesh,meshconnect.com,US,"Senior BD Manager, APAC with Japan focus",https://job-boards.greenhouse.io/mesh
+greenhouse,acommerce,aCommerce,acommerce.asia,TH,"INFERRED: APAC e-commerce enabler, board verified",https://job-boards.greenhouse.io/acommerce
+greenhouse,appnovation,Appnovation,appnovation.com,CA,"Business Development Director, APAC",https://job-boards.greenhouse.io/appnovation
+greenhouse,pokemoncareers,Pokemon Company International,pokemon.com,US,Bilingual JP/EN roles coordinating with the Tokyo parent,https://job-boards.greenhouse.io/pokemoncareers
+greenhouse,wargamingen,Wargaming,wargaming.com,CY,INFERRED: board verified; Tokyo studio,https://job-boards.greenhouse.io/wargamingen
+greenhouse,neteasegames,NetEase Games,neteasegames.com,CN,INFERRED: board verified; Japan studios,https://job-boards.greenhouse.io/neteasegames
+greenhouse,hoyoverse,HoYoverse,hoyoverse.com,CN,INFERRED: board verified; Tokyo operations,https://job-boards.greenhouse.io/hoyoverse
+greenhouse,couchbaseinc,Couchbase,couchbase.com,US,INFERRED: board verified; Tokyo office,https://job-boards.greenhouse.io/couchbaseinc
+greenhouse,midpointmarkets,Midpoint Markets,midpointmarkets.com,US,"Quantitative Researcher, location list includes Japan",https://job-boards.greenhouse.io/midpointmarkets
+greenhouse,fanaticscommerce,Fanatics Commerce,fanatics.com,US,INFERRED: board verified; Japan operations,https://job-boards.greenhouse.io/fanaticscommerce
+greenhouse,mongodb,MongoDB,mongodb.com,US,"INFERRED: valid board, no Japan role at first check; Tokyo office",https://job-boards.greenhouse.io/mongodb
+greenhouse,pagerduty,PagerDuty,pagerduty.com,US,"INFERRED: valid board, no Japan role at first check; Tokyo office",https://job-boards.greenhouse.io/pagerduty
+greenhouse,airtable,Airtable,airtable.com,US,"INFERRED: valid board, no Japan role at first check",https://job-boards.greenhouse.io/airtable
+greenhouse,algolia,Algolia,algolia.com,FR,"INFERRED: valid board, no Japan role at first check; Tokyo office",https://job-boards.greenhouse.io/algolia
+greenhouse,samsara,Samsara,samsara.com,US,"INFERRED: valid board, no Japan role at first check",https://job-boards.greenhouse.io/samsara
+greenhouse,coinbase,Coinbase,coinbase.com,US,INFERRED: valid board; Coinbase operates a Japan entity,https://job-boards.greenhouse.io/coinbase
+greenhouse,ripple,Ripple,ripple.com,US,INFERRED: valid board; Japan/APAC presence,https://job-boards.greenhouse.io/ripple
+greenhouse,okx,OKX,okx.com,SG,INFERRED: valid board; Japan exchange operations,https://job-boards.greenhouse.io/okx
+greenhouse,contentful,Contentful,contentful.com,DE,"INFERRED: valid board, no Japan role at first check",https://job-boards.greenhouse.io/contentful
+greenhouse,amplitude,Amplitude,amplitude.com,US,INFERRED: valid board; Tokyo office,https://job-boards.greenhouse.io/amplitude
+greenhouse,cohesity,Cohesity,cohesity.com,US,INFERRED: valid board; Japan operations,https://job-boards.greenhouse.io/cohesity
+lever,mujininc,Mujin,mujin.co.jp,JP,"Board location filter ""Tokyo, Japan (MJHQ)""; JP-language engineer roles",https://jobs.lever.co/mujininc
+lever,woven-by-toyota,Woven by Toyota,woven.toyota,JP,Board location filter 東京都中央区; JP-language engineer postings,https://jobs.lever.co/woven-by-toyota
+lever,ispace-inc,"ispace, inc.",ispace-inc.com,JP,"Board location filter ""Tokyo, Japan""; Space Solutions Architect in Tokyo",https://jobs.lever.co/ispace-inc
+lever,tx-inc.com,TELEXISTENCE,tx-inc.com,JP,Tokyo robotics roles on the public board,https://jobs.lever.co/tx-inc.com
+lever,Autify,"Autify, Inc.",autify.com,JP,"Bilingual EN/JA support engineer role, Tokyo, JST hours",https://jobs.lever.co/Autify
+lever,moneytree,Moneytree,moneytree.jp,JP,Tokyo fintech roles on the public board,https://jobs.lever.co/moneytree
+lever,tektome,Tektome Inc.,tektome.com,JP,"Senior Frontend Developer, Tokyo",https://jobs.lever.co/tektome
+lever,deepx,DeepX,deepx.co.jp,JP,"Tokyo AI/robotics startup, Talent Acquisition role",https://jobs.lever.co/deepx
+lever,drivemode,Drivemode,drivemode.com,JP,Product Designer role listed via a Japan job aggregator,https://jobs.lever.co/drivemode
+lever,palantir,Palantir Technologies,palantir.com,US,"Board location filter ""Tokyo, Japan""; Japan Forward Deployed roles",https://jobs.lever.co/palantir
+lever,coupa,Coupa Software,coupa.com,US,"Board location filter ""Tokyo, Japan""",https://jobs.lever.co/coupa
+lever,watchguard,WatchGuard Technologies,watchguard.com,US,"Board location filter ""Tokyo, Japan""",https://jobs.lever.co/watchguard
+lever,trustyou,TrustYou,trustyou.com,DE,"Board location filter ""Tokyo, Japan""",https://jobs.lever.co/trustyou
+lever,bluebottlecoffee,Blue Bottle Coffee,bluebottlecoffee.com,US,"People Partner Japan; cafe roles in Tokyo, Fukuoka, Kyoto",https://jobs.lever.co/bluebottlecoffee
+lever,weloglobal,Welo Data,welo.ai,US,Japanese metadata specialist roles across Tokyo/Osaka/Nagoya/Yokohama,https://jobs.lever.co/weloglobal
+lever,welocalize,Welocalize,welocalize.com,US,"Board location filter ""Japan""; onsite Japanese interpreters in Tokyo",https://jobs.lever.co/welocalize
+lever,arcteryx.com,Arcteryx,arcteryx.com,CA,"Retail Recruiter Japan, Tokyo hybrid",https://jobs.lever.co/arcteryx.com
+lever,mendix,Mendix,mendix.com,NL,"Multiple roles titled ""(Tokyo, Japan)""",https://jobs.lever.co/mendix
+lever,extremenetworks,Extreme Networks,extremenetworks.com,US,"Board location filter ""Tokyo, Japan""; Premier Resident Engineer Japan",https://jobs.lever.co/extremenetworks
+lever,binance,Binance,binance.com,KY,"Board location filter ""Japan, Tokyo""; Senior Marketing Manager Japan",https://jobs.lever.co/binance
+lever,cic,Cambridge Innovation Center,cic.com,US,"Multiple ""Tokyo, JP"" roles",https://jobs.lever.co/cic
+lever,jobgether,Jobgether,jobgether.com,BE,Remote-from-Japan engineering role; Japanese-speaking TA lead,https://jobs.lever.co/jobgether
+lever,canarytechnologies,Canary Technologies,canarytechnologies.com,US,"Board location filter ""Remote - Japan""",https://jobs.lever.co/canarytechnologies
+lever,crypto,Crypto.com,crypto.com,SG,Japan/Tokyo roles including HR Senior Manager Japan,https://jobs.lever.co/crypto
+lever,sensortower,Sensor Tower,sensortower.com,US,"Account Executive, Tokyo",https://jobs.lever.co/sensortower
+lever,GurobiOptimization,Gurobi Optimization,gurobi.com,US,Regional Sales Director (Japan); AE Renewals (Japan Remote),https://jobs.lever.co/GurobiOptimization
+lever,veeva,Veeva Systems,veeva.com,US,"""Japan - Osaka"" roles; Tokyo/Osaka office attendance",https://jobs.lever.co/veeva
+lever,sonatype,Sonatype,sonatype.com,US,"Senior Account Executive, Japan and SEA",https://jobs.lever.co/sonatype
+lever,vrchat,VRChat,vrchat.com,US,Engineering roles with a Tokyo location option,https://jobs.lever.co/vrchat
+lever,limitbreak,Limit Break,limitbreak.com,US,"Board location filter ""Tokyo""; JP-language live-ops role",https://jobs.lever.co/limitbreak
+lever,lalamove,Lalamove,lalamove.com,HK,"Board location filter ""Osaka""",https://jobs.lever.co/lalamove
+lever,megaport,Megaport,megaport.com,AU,Osaka and Tokyo among listed office locations,https://jobs.lever.co/megaport
+lever_eu,quantinuum,Quantinuum,quantinuum.com,GB,"EU board; Tokyo, Japan hybrid roles",https://jobs.eu.lever.co/quantinuum
+lever,xsolla,Xsolla,xsolla.com,US,Office Manager Japan; Marketing Manager Japan; Corporate Attorney Japan,https://jobs.lever.co/xsolla
+lever,BlueMatrix,BlueMatrix,bluematrix.com,US,"Client Success Manager Tokyo Japan, JP/EN bilingual",https://jobs.lever.co/BlueMatrix
+lever,novaspace,Novaspace,nova.space,FR,"Strategy Consultant Japan Manager, Tokyo, JP fluency",https://jobs.lever.co/novaspace
+lever,zilliz,Zilliz,zilliz.com,US,Solutions Architect Japan,https://jobs.lever.co/zilliz
+lever,shift-technology,Shift Technology,shift-technology.com,FR,Data Scientist Tokyo,https://jobs.lever.co/shift-technology
+lever,cognite,Cognite,cognite.com,NO,"Posting citing the Tokyo, Japan office",https://jobs.lever.co/cognite
+lever,kraken123,Kraken,kraken.com,US,Finance Manager owning Japanese finance operations,https://jobs.lever.co/kraken123
+lever,uipath,UiPath,uipath.com,US,Product Marketing Manager requiring fluent Japanese,https://jobs.lever.co/uipath
+lever,entrupy,Entrupy,entrupy.com,US,"Customer Experience Agent JP, Tokyo, native Japanese",https://jobs.lever.co/entrupy
+lever,kpler,Kpler,kpler.com,BE,Commercial Sales Manager Japan,https://jobs.lever.co/kpler
+lever,applike,applike group,applike-group.com,DE,Supply Growth Manager Japan; Tokyo office listed,https://jobs.lever.co/applike
+lever,mistplay,Mistplay,mistplay.com,CA,"Publisher Manager II, Japan",https://jobs.lever.co/mistplay
+lever,appen,Appen,appen.com,AU,"Freelance Japanese translation rater, Japan-based",https://jobs.lever.co/appen
+lever,serotonin,Serotonin,serotonin.com,US,"APAC Web3 Marketing Manager, Japan (Remote)",https://jobs.lever.co/serotonin
+lever,rws,RWS,rws.com,GB,Social Media Content Evaluator (Japanese),https://jobs.lever.co/rws
+lever,panopto,Panopto,panopto.com,US,Strategic Account Manager (Japanese speaking),https://jobs.lever.co/panopto
+lever,shieldai,Shield AI,shield.ai,US,"Senior Director BD Japan, South Korea, Taiwan",https://jobs.lever.co/shieldai
+lever,field-ai,Field AI,fieldai.com,US,"Field Operator Robotics Deployment Tokyo, Japan",https://jobs.lever.co/field-ai
+lever,farfetch,Farfetch,farfetch.com,GB,"Board location filter ""JP Tokyo""",https://jobs.lever.co/farfetch
+lever,fresha,Fresha,fresha.com,GB,"Board location filter ""Japan""",https://jobs.lever.co/fresha
+lever_eu,tomtom,TomTom,tomtom.com,NL,"EU board; Tokyo, Japan hybrid roles",https://jobs.eu.lever.co/tomtom
+lever_eu,mobileye,Mobileye,mobileye.com,IL,"EU board; Tokyo, Japan onsite roles",https://jobs.eu.lever.co/mobileye
+lever_eu,adaptovate,ADAPTOVATE,adaptovate.com,AU,EU board; Tokyo hybrid roles,https://jobs.eu.lever.co/adaptovate
+lever_eu,kwalee,Kwalee,kwalee.com,GB,EU board; Tokyo positions,https://jobs.eu.lever.co/kwalee
+lever_eu,lionbridge,Lionbridge,lionbridge.com,US,EU board surfaced on a Japan-remote search,https://jobs.eu.lever.co/lionbridge
+lever,viseven,Viseven,viseven.com,EE,Account Manager covering APAC including Japan,https://jobs.lever.co/viseven
+lever,EnvisionRPO,Envision RPO,envisionrpo.com,US,"Technical Recruiter with a Tokyo, Japan location",https://jobs.lever.co/EnvisionRPO
+lever,bluecatnetworks,BlueCat Networks,bluecatnetworks.com,CA,"Field and Channel Marketing Manager, APAC",https://jobs.lever.co/bluecatnetworks
+lever,airalo,Airalo,airalo.com,SG,Partnerships Director APAC covering the Japan market,https://jobs.lever.co/airalo
+lever,jito,Jito Foundation,jito.network,US,"Growth Lead, Korea and APAC with Japan in scope",https://jobs.lever.co/jito
+lever,mistral,Mistral AI,mistral.ai,FR,"AI Developer Advocate APAC, Japanese preferred",https://jobs.lever.co/mistral
+lever,immutable,Immutable,immutable.com,AU,Listed as hiring in Japan on a public crypto job index,https://jobs.lever.co/immutable
+lever,3eco,3E,3eco.com,US,Business Development Executive for the Japan sales team,https://jobs.lever.co/3eco
+lever,matchgroup,Match Group,mtch.com,US,Surfaced on a Tokyo/Japan talent-acquisition search,https://jobs.lever.co/matchgroup
+lever,prestolabs,Presto Labs,prestolabs.io,SG,Surfaced on a Japan/Tokyo quant-trading search,https://jobs.lever.co/prestolabs
+lever,tsmg,TSMG,tsmg.com,PT,Surfaced repeatedly across Tokyo/Japan queries,https://jobs.lever.co/tsmg
+lever,neowiz,Neowiz,neowiz.com,KR,Surfaced on a Japan game-publishing search,https://jobs.lever.co/neowiz
+lever,nahc,nahc.io,nahc.io,HK,Surfaced on Tokyo/Japan queries,https://jobs.lever.co/nahc
+lever,BTSE,BTSE,btse.com,VG,Surfaced on a Tokyo fintech/payments search,https://jobs.lever.co/BTSE
+lever,yuno,Yuno,y.uno,CO,Technical Support Analyst covering APAC hours,https://jobs.lever.co/yuno
+lever,netomi,Netomi,netomi.com,US,Surfaced on a Japanese-language remote-role search,https://jobs.lever.co/netomi
+lever,360learning,360Learning,360learning.com,FR,Surfaced on a Japanese-language remote-role search,https://jobs.lever.co/360learning
+lever,bazaarvoice,Bazaarvoice,bazaarvoice.com,US,Senior Developer Advocate with APAC regional offices,https://jobs.lever.co/bazaarvoice
+lever,clovirtualfashion,CLO Virtual Fashion,clo3d.com,KR,Surfaced on a Tokyo/Japan retail-fashion search,https://jobs.lever.co/clovirtualfashion
+lever,larian,Larian Studios,larian.com,BE,Surfaced on a Japan game-studio/localization search,https://jobs.lever.co/larian
+lever,provectus,Provectus,provectus.com,US,Surfaced on a Tokyo enterprise-consulting search,https://jobs.lever.co/provectus
+lever,octoenergy,Octopus Energy Group,octopus.energy,GB,Group operates a Japan business,https://jobs.lever.co/octoenergy
+lever,smartly.io,Smartly,smartly.io,FI,Surfaced on a Tokyo bilingual customer-success search,https://jobs.lever.co/smartly.io
+lever,spreetail,Spreetail,spreetail.com,US,Surfaced on a Japan e-commerce/logistics search,https://jobs.lever.co/spreetail
+lever,dnb,Dun and Bradstreet,dnb.com,US,Surfaced on a Tokyo legal/regulatory-compliance search,https://jobs.lever.co/dnb
+lever,wepclinical,WEP Clinical,wepclinical.com,GB,Surfaced on a Tokyo/Japan clinical and pharma search,https://jobs.lever.co/wepclinical
+lever,alimentiv-2,Alimentiv,alimentiv.com,CA,Surfaced on a Tokyo/Japan clinical search,https://jobs.lever.co/alimentiv-2
+lever,chooose,Chooose,chooose.today,NO,Surfaced on a Japan engineer/remote search,https://jobs.lever.co/chooose
+lever,3pillarglobal,3Pillar Global,3pillarglobal.com,US,Surfaced on a Tokyo/Japan new-grad search,https://jobs.lever.co/3pillarglobal
+lever,sonarsource,Sonar,sonarsource.com,CH,Surfaced on a Tokyo enterprise-sales search,https://jobs.lever.co/sonarsource
+lever,tri,Toyota Research Institute,tri.global,US,Toyota-group AI lab; surfaced on a Tokyo AI/ML search,https://jobs.lever.co/tri
+lever_eu,prosus,Prosus,prosus.com,NL,EU board surfaced on a Tokyo/Japan hybrid-role search,https://jobs.eu.lever.co/prosus
+lever,moonpay,MoonPay,moonpay.com,US,INFERRED: global crypto payments firm with Japan market activity,https://jobs.lever.co/moonpay
+lever,certik,CertiK,certik.com,US,INFERRED: Web3 security firm with APAC coverage,https://jobs.lever.co/certik
+lever,1inch,1inch,1inch.io,CH,"INFERRED: global DeFi team, remote APAC",https://jobs.lever.co/1inch
+lever,offchainlabs,Offchain Labs,offchainlabs.com,US,INFERRED: Arbitrum team with a Japan ecosystem presence,https://jobs.lever.co/offchainlabs
+lever,coins,Coins.ph,coins.ph,PH,INFERRED: SEA/APAC crypto exchange,https://jobs.lever.co/coins
+lever,GoToGroup,GoTo Group,gotocompany.com,ID,INFERRED: surfaced on APAC fintech and Japan/Tokyo searches,https://jobs.lever.co/GoToGroup
+lever,trunkio,Trunk.io,trunk.io,US,INFERRED: surfaced on an APAC/Japan devrel search,https://jobs.lever.co/trunkio
+lever,zeta,Zeta,zeta.tech,IN,INFERRED: surfaced on a Tokyo fintech search,https://jobs.lever.co/zeta
+lever,quantco,QuantCo,quantco.com,DE,INFERRED: surfaced on a quant/Tokyo search,https://jobs.lever.co/quantco

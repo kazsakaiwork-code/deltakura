@@ -1,0 +1,26 @@
+# MCP server / npm package. Part of the `kazsakaiwork-code/deltakura` monorepo.
+
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets - there should never be any here, and if one appears it must not be
+# the git history that finds out.
+*.env
+.env*
+*.token
+*.key
+*.pem
+npm-debug.log*
+
+# Publisher originals and operational state never live in a code directory.
+**/raw/
+**/state/
+**/lookup/
+*.csv.gz
+*.zip
+
+# `data/procurement-stats.json` is COMMITTED on purpose: it is the package's
+# payload, rebuilt with `npm run build-data`. Nothing else belongs in data/.
+data/*
+!data/procurement-stats.json

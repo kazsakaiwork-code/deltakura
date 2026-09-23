@@ -1,0 +1,85 @@
+source_id: ats_registry
+bet: B
+product: Deltakura Japan Hiring Index
+publishers:
+  - name: Greenhouse Software, Inc.
+    endpoint: https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs
+    tos_matrix_row: Greenhouse Job Board API
+    reuse_allowed: Y            # resolved 2026-09-22
+    robots: boards-api.greenhouse.io/robots.txt disallows only /embed/
+  - name: Lever (Employ Inc.)
+    endpoint: https://api.lever.co/v0/postings/{site}?mode=json
+    tos_matrix_row: Lever Postings API
+    reuse_allowed: Y            # resolved 2026-09-22
+    robots: api.lever.co/robots.txt is 'Allow: /' with Crawl-delay 1 (we use 2 s)
+
+clearance_status: >
+  CLEARED, AND HELD. Both rows are reuse_allowed=Y in the clearance matrix since
+  2026-09-22, so crawlers/_lib/tos.py admits them for production collection.
+  Publication is a separate decision, pending operator approval, so
+  crawlers/ats_registry/ats.py takes every clearance out with an explicit hold
+  while BET_B_LIVE is false, which it is by default: each record is marked
+  tos_status=cleared-held and require_publishable() refuses it. The store also
+  lives outside the repository, under $DELTAKURA_DATA_DIR/ats/. Nothing derived
+  from these boards may be published, listed or sold until that approval is
+  given and BET_B_LIVE is set to true. Ashby stays out (its job-board host disallows
+  /api/); SmartRecruiters is excluded outright (robots.txt allows only
+  LinkedInBot).
+
+go_live_flag:
+  name: BET_B_LIVE
+  default: "false"
+  approval: pending operator approval
+  effect: >
+    false - collection runs, every clearance carries a hold, nothing is
+    publishable. true - the hold is lifted and require_publishable() passes.
+    Defined in crawlers/ats_registry/ats.py and covered by
+    crawlers/tests/test_politeness.py.
+
+conditions_of_the_Y_verdict:
+  - store structured facts and the public URL only; never a description body
+  - drop every person field at ingest
+  - attribution plus a non-affiliation line on every surface that shows a row
+  - honour a company opt-out within 72 hours
+  - never feed this corpus to model training
+  - publish no ATS-versus-ATS benchmarking (Lever's terms bar that use)
+  - re-verify robots.txt and the operators' legal pages, and halt on change
+
+excluded:
+  - LinkedIn, Glassdoor, Indeed and every other site behind a login or a
+    scraping clause. The registry is built from web search and public lists.
+  - Ashby: unresolved aggregation stance.
+  - SmartRecruiters: robots.txt Disallow for every agent but LinkedInBot.
+
+data_model: Bet B - job posting first-seen
+key: "<ats>:<company_slug>:<ats_job_id>"
+closed_rule: >
+  Absent from two consecutive SUCCESSFUL crawls of its board -> status=closed,
+  closed_at = the first crawl that missed it. A failed crawl never closes a
+  posting. A 304 counts as a successful crawl in which everything was still
+  present.
+
+never_stored:
+  - job description body
+  - recruiter / hiring-manager names
+  - contact email addresses
+  - salary free text
+
+semantics: >
+  first_seen_at is the date OUR crawler first observed the posting. Every
+  surface must say "first seen by Deltakura on ...", never "posted on ...".
+
+etiquette:
+  min_delay_seconds: 2.0
+  requests_per_run: one conditional GET per board in registry.csv
+  conditional: ETag / If-Modified-Since, cached in $DELTAKURA_DATA_DIR/ats/state/
+  daily_cap_note: >
+    The standing prototype cap is 20 requests per host per day and holds until
+    the bot contact URL resolves. Verifying and tracking 100+ boards needs more
+    than that on two hosts, so the cap is raised explicitly on the command line
+    (--daily-cap) rather than silently in code, and the deviation is recorded
+    in crawlers/ats_registry/README.md.
+  model_training: >
+    Do not feed this corpus to model training. Workable's robots.txt carries
+    Content-Signal: ai-train=no and the postings are the hiring companies'
+    own content.

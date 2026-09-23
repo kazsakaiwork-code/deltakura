@@ -1,0 +1,85 @@
+/**
+ * Guards on the deployment surface: the publication boundary and the
+ * "nothing is deployed" rule must survive a hurried edit.
+ */
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const read = (p: string) => readFileSync(resolve(ROOT, p), 'utf8');
+
+describe('package.json', () => {
+  const pkg = JSON.parse(read('package.json'));
+
+  it('is private: this Worker is deployed, never published to a registry', () => {
+    expect(pkg.private).toBe(true);
+  });
+
+  it('has no deploy script that could run by accident', () => {
+    expect(pkg.scripts.deploy).toContain('exit 1');
+    expect(pkg.scripts.deploy).toContain('operator approval');
+  });
+
+  it('names no person', () => {
+    expect(pkg.author).toBeUndefined();
+    expect(JSON.stringify(pkg)).not.toMatch(/@gmail|@users\.noreply/);
+  });
+});
+
+describe('wrangler.toml', () => {
+  const toml = read('wrangler.toml');
+
+  it('carries placeholders, never a real account or resource id', () => {
+    expect(toml).not.toMatch(/account_id/);
+    for (const binding of ['KV_INTENT', 'KV_METRICS', 'DB', 'ARCHIVE']) {
+      expect(toml, binding).toContain(binding);
+    }
+    const ids = [...toml.matchAll(/^\s*(?:database_)?id\s*=\s*"([^"]+)"/gm)].map((m) => m[1]);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(id, id).toMatch(/^REPLACE_WITH_/);
+  });
+
+  it('defaults to dev mode and declares no custom route', () => {
+    expect(toml).toMatch(/DELTAKURA_MODE\s*=\s*"dev"/);
+    expect(toml).not.toMatch(/^\s*routes\s*=/m);
+  });
+
+  it('declares the three named environments', () => {
+    expect(toml).toContain('name = "deltakura-api"');
+    expect(toml).toContain('name = "deltakura-api-stg"');
+  });
+});
+
+describe('no maintainer-identifying or machine-specific strings', () => {
+  const files = [
+    'package.json',
+    'wrangler.toml',
+    'tsconfig.json',
+    'README.md',
+    'scripts/build-data.mjs',
+    'migrations/0001_init.sql'
+  ];
+
+  it('has no absolute filesystem path and no personal identifier', () => {
+    for (const f of files) {
+      const text = read(f);
+      expect(text, f).not.toMatch(/[A-Za-z]:\\\\?Users/);
+      expect(text, f).not.toMatch(/\/home\/[a-z]/);
+      expect(text, f).not.toMatch(/@gmail\.com|@outlook\.com|@yahoo\./i);
+    }
+  });
+});
+
+describe('the D1 schema cannot hold a natural person', () => {
+  const sql = read('migrations/0001_init.sql');
+
+  it('has no personal-data column', () => {
+    const columns = [...sql.matchAll(/^\s{2}([a-z_]+)\s+(TEXT|INTEGER)/gm)].map((m) => m[1]);
+    expect(columns).toContain('corporate_number');
+    for (const c of columns) {
+      expect(c, c).not.toMatch(/担当|氏名|代表|連絡先|電話|mail|phone|person|street|change_cause|furigana/i);
+    }
+  });
+});

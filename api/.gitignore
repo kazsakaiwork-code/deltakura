@@ -1,0 +1,26 @@
+# Cloudflare Worker. Part of the `kazsakaiwork-code/deltakura` monorepo.
+
+node_modules/
+.wrangler/
+dist/
+*.tsbuildinfo
+
+# Secrets. There should never be any here; if one appears, it must not be the
+# git history that finds out.
+.dev.vars
+!.dev.vars.example
+*.env
+.env*
+*.token
+*.key
+*.pem
+
+# Publisher originals and operational state never live in a code directory.
+**/raw/
+**/state/
+**/lookup/
+*.csv.gz
+*.zip
+
+# src/data/*.json is COMMITTED on purpose: it is what `wrangler dev --local`
+# serves and what production falls back to. `npm run build-data` regenerates it.

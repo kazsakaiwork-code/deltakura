@@ -1,0 +1,6 @@
+# Copy to .dev.vars for local development. .dev.vars is git-ignored.
+# No real secret belongs in this file or in wrangler.toml.
+
+# Salts the in-memory hash of client IPs and client ids. In production this is a
+# Worker secret (`wrangler secret put IP_HASH_SALT`), never a var.
+IP_HASH_SALT="local-development-salt-change-me"

@@ -1,0 +1,18 @@
+# Static site. Part of the `kazsakaiwork-code/deltakura` monorepo.
+
+# Generated output. `python build.py` recreates it from data/ in about a second,
+# so it is not worth versioning, and committing it would make every content
+# change an unreviewable 350-file diff.
+public/
+
+# Firebase CLI local state. .firebaserc IS committed (it is the project-id
+# template); these are not.
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.runtimeconfig.json
+
+*.py[cod]
+__pycache__/
+*.env
+*.token

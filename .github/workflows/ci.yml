@@ -1,0 +1,89 @@
+name: CI
+
+# Everything here runs on a clean checkout with no secrets and no private data
+# directory. That is the point: if the public repository cannot build and test
+# itself, it is not publishable.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  crawlers:
+    name: crawlers (python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the collectors' only dependency
+        run: python -m pip install --disable-pip-version-check requests
+      - name: Test suite
+        # Anonymisation (R1-R6), parsers, politeness and the fail-closed source
+        # clearance gate. No network: the HTTP layer runs against a stub.
+        run: python crawlers/tests/run_tests.py
+
+      - name: The published Bet-C summary and manifest match a fresh build
+        # With no collection store, the builder rebuilds both published files
+        # from the committed summary's own day table. They carry no build
+        # timestamp, so this is a byte comparison: it proves the two artefacts
+        # are self-consistent and reproducible by anyone who clones the repo.
+        env:
+          DELTAKURA_DATA_DIR: ${{ runner.temp }}/no-collection-store
+        run: python crawlers/nta_diff/publish_summary.py --check
+
+  packages:
+    name: ${{ matrix.package }} (node)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [mcp, api]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.package }}/package-lock.json
+      - run: npm ci
+        working-directory: ${{ matrix.package }}
+      - name: Rebuild the bundled data from data/published/
+        # No private collection store here, and none is needed: every committed
+        # bundle is a pure function of data/published/. Neither builder writes a
+        # timestamp, and api/src/data/nta-sample.json is a fixed
+        # file that `build-data` does not touch, so a rebuild is a no-op on a
+        # clean checkout.
+        run: npm run build-data
+        working-directory: ${{ matrix.package }}
+      - name: The committed bundles match a fresh build
+        # Whole tree, not just this package: the MCP builder also writes the
+        # published copy under data/published/, and those bytes must match too.
+        run: git diff --exit-code
+      - run: npm test
+        working-directory: ${{ matrix.package }}
+
+  site:
+    name: site (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and check invariants
+        # No DELTAKURA_DATA_DIR here, so this also proves the site builds from
+        # data/published/ alone. The build itself fails on a mailto:, a <form>,
+        # an email address, a data page without attribution or JSON-LD, a page
+        # over 100 KB or a tree over 50 MB.
+        run: python site/build.py --check

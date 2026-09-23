@@ -1,0 +1,47 @@
+source_id: nta_diff
+bet: C
+product: Deltakura Registry Diff
+publisher: 国税庁 (National Tax Agency)
+page: https://www.houjin-bangou.nta.go.jp/download/sabun/
+terms: https://www.houjin-bangou.nta.go.jp/riyokiyaku/index.html
+license: 公共データ利用規約(第1.0版)
+license_notes: >
+  Commercial reuse and redistribution permitted. Attribution required.
+  Modifications must be declared. No account, no application ID, no API key.
+attribution: >
+  出典：国税庁法人番号公表サイト（国税庁）（https://www.houjin-bangou.nta.go.jp/download/sabun/）
+tos_matrix_row: 法人番号公表サイト 差分データ
+reuse_allowed: Y
+
+access:
+  method: form-post
+  # The listing page carries a CSRF token; the download is a POST of
+  # {token, event=download, selDlFileNo=<fileNo>} back to the same URL.
+  # No login, no session beyond the token, no personal data submitted.
+  list_url: https://www.houjin-bangou.nta.go.jp/download/sabun/index.html
+  file_types:
+    0: CSV Shift_JIS
+    1: CSV Unicode   # what we fetch
+    2: XML Unicode
+  preferred_file_type: 1
+  robots: host serves no robots.txt (HTML error page) - no directives
+
+publication:
+  cadence: daily, around 16:00 JST
+  gaps: no file on weekends, public holidays, or 12/29-01/03
+  retention_upstream_days: 40
+  typical_size_bytes: 110000-155000
+  signature: each ZIP carries an OpenPGP .asc detached signature
+
+etiquette:
+  requests_per_run: 1 listing page + 1 POST per new file
+  min_delay_seconds: 2.0
+  daily_cap_per_host: 60   # backfill of the 40-day window plus headroom
+
+schema: Bet C - corporate registry diff
+csv_columns: 30, no header row, UTF-8, see crawlers/nta_diff/README.md
+personal_data: >
+  None. 法人番号 are issued to 法人 and public bodies, not to 個人事業主.
+  The 30-column diff layout carries no representative-person field; the parser
+  additionally refuses any column whose name matches the R3 personal-field
+  pattern, so a future layout change fails closed.

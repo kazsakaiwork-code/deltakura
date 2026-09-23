@@ -1,0 +1,108 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# Deltakura v0 read API.
+#
+# EVERY ID BELOW IS A PLACEHOLDER. No Cloudflare account exists yet, so nothing
+# here has been created and nothing has been deployed. `wrangler dev --local`
+# works offline against local simulations of these bindings and against the JSON
+# bundled by `npm run build-data`; `wrangler deploy` must not be run until an
+# account exists and the first deploy has a per-item operator approval.
+
+name = "deltakura-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+# No node builtins are used, so no compatibility flags are needed.
+
+[vars]
+DELTAKURA_MODE = "dev"
+RELEASE = "0.1.0"
+ALLOWED_ORIGINS = "https://deltakura.dev,https://www.deltakura.dev,https://deltakura-signals.web.app,https://deltakura-signals.firebaseapp.com"
+RATE_LIMIT_PER_MINUTE = "60"
+INTENT_RATE_LIMIT_PER_MINUTE = "20"
+
+# IP_HASH_SALT is a secret, not a var:
+#   wrangler secret put IP_HASH_SALT
+# It only ever salts an in-memory hash that is discarded with the isolate.
+
+[[kv_namespaces]]
+binding = "KV_INTENT"
+id = "REPLACE_WITH_KV_INTENT_ID"          # wrangler kv namespace create KV_INTENT
+
+[[kv_namespaces]]
+binding = "KV_METRICS"
+id = "REPLACE_WITH_KV_METRICS_ID"         # wrangler kv namespace create KV_METRICS
+
+[[d1_databases]]
+binding = "DB"
+database_name = "signals"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"   # wrangler d1 create signals
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "ARCHIVE"
+bucket_name = "signals-archive"           # wrangler r2 bucket create signals-archive
+
+[observability]
+enabled = true
+
+# ---------------------------------------------------------------- staging ---
+[env.staging]
+name = "deltakura-api-stg"
+workers_dev = true
+
+[env.staging.vars]
+DELTAKURA_MODE = "prod"
+RELEASE = "0.1.0-stg"
+ALLOWED_ORIGINS = "https://deltakura-signals.web.app,http://localhost:5000"
+RATE_LIMIT_PER_MINUTE = "60"
+INTENT_RATE_LIMIT_PER_MINUTE = "20"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_INTENT"
+id = "REPLACE_WITH_STAGING_KV_INTENT_ID"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_METRICS"
+id = "REPLACE_WITH_STAGING_KV_METRICS_ID"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "signals-stg"
+database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
+
+[[env.staging.r2_buckets]]
+binding = "ARCHIVE"
+bucket_name = "signals-archive-stg"
+
+# ------------------------------------------------------------- production ---
+[env.production]
+name = "deltakura-api"
+workers_dev = true
+# routes are added only after the custom domain exists, which is a later phase:
+# routes = [{ pattern = "api.deltakura.dev/v0/*", zone_name = "deltakura.dev" }]
+
+[env.production.vars]
+DELTAKURA_MODE = "prod"
+RELEASE = "0.1.0"
+ALLOWED_ORIGINS = "https://deltakura.dev,https://www.deltakura.dev,https://deltakura-signals.web.app"
+RATE_LIMIT_PER_MINUTE = "60"
+INTENT_RATE_LIMIT_PER_MINUTE = "20"
+
+[[env.production.kv_namespaces]]
+binding = "KV_INTENT"
+id = "REPLACE_WITH_KV_INTENT_ID"
+
+[[env.production.kv_namespaces]]
+binding = "KV_METRICS"
+id = "REPLACE_WITH_KV_METRICS_ID"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "signals"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[env.production.r2_buckets]]
+binding = "ARCHIVE"
+bucket_name = "signals-archive"

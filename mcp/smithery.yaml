@@ -1,0 +1,42 @@
+# Smithery-style manifest for the Deltakura MCP server.
+#
+# Not submitted anywhere: listing on any directory is a per-item operator
+# approval. This file exists so the submission is a copy, not a rewrite.
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required: []
+    properties:
+      dataDir:
+        type: string
+        title: Local data directory
+        description: >-
+          Path to a local Deltakura data directory. When set, the corporate-number
+          tools read <dir>/nta/normalized/*.csv.gz directly. When unset they use
+          the hosted Deltakura API, which is not deployed yet.
+      apiBase:
+        type: string
+        title: API base URL
+        default: https://api.deltakura.dev/v0
+        description: Base URL of the hosted Deltakura read API.
+      apiEnabled:
+        type: boolean
+        title: Enable the hosted API
+        default: false
+        description: >-
+          Call the hosted API instead of reporting that remote mode is not
+          available yet. Leave off until the API is live.
+  commandFunction: |-
+    (config) => ({
+      command: 'deltakura-mcp',
+      args: [],
+      env: {
+        ...(config.dataDir ? { DELTAKURA_DATA_DIR: config.dataDir } : {}),
+        ...(config.apiBase ? { DELTAKURA_API_BASE: config.apiBase } : {}),
+        ...(config.apiEnabled ? { DELTAKURA_API_ENABLED: '1' } : {})
+      }
+    })
+  exampleConfig:
+    apiBase: https://api.deltakura.dev/v0
+    apiEnabled: false

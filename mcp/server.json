@@ -1,0 +1,54 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.kazsakaiwork-code/jp-public-signals",
+  "description": "Read-only Japanese public open data: procurement award statistics and 法人番号 register changes. Unofficial archive of public open data: not an official source and not affiliated with any government body.",
+  "status": "active",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/kazsakaiwork-code/deltakura",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@deltakura/mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "DELTAKURA_DATA_DIR",
+          "description": "Path to a local Deltakura data directory. When set, the 法人番号 tools read it directly instead of calling the hosted API.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "filepath"
+        },
+        {
+          "name": "DELTAKURA_API_BASE",
+          "description": "Base URL of the hosted Deltakura read API. Defaults to https://api.deltakura.dev/v0.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "DELTAKURA_API_ENABLED",
+          "description": "Set to 1 to call the hosted API. While it is 0 or unset the 法人番号 tools report that remote mode is not available yet.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "DELTAKURA_NTA_MAX_SCAN_BYTES",
+          "description": "Cap on the gzipped bytes of local change files scanned per call. Defaults to 268435456.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "number"
+        }
+      ]
+    }
+  ]
+}

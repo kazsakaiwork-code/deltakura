@@ -1,0 +1,38 @@
+MIT License
+
+Copyright (c) 2026 Deltakura
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+The software is MIT. The DATA it serves is not ours to relicense:
+
+  調達ポータル 落札実績 (procurement awards)
+    出典：調達ポータル（https://www.p-portal.go.jp/）
+    政府標準利用規約（第2.0版）- reuse permitted with source indication.
+
+  国税庁 法人番号公表サイト 差分データ (corporate-number register changes)
+    出典：国税庁法人番号公表サイト（国税庁）（https://www.houjin-bangou.nta.go.jp/download/sabun/）
+    公共データ利用規約（第1.0版）- reuse permitted with source indication.
+
+Both are used in modified form (normalised, aggregated, anonymised), which both
+licences require to be declared. Our derived aggregates are offered under
+CC BY 4.0. Reproduce the attribution strings wherever you show a number from
+this server; they travel in every tool response so that you can.

@@ -1,0 +1,69 @@
+{
+  "name": "@deltakura/mcp",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Read-only MCP server for Japanese public open data: national procurement award statistics and the corporate-number (法人番号) change register. Unofficial: not an official source and not affiliated with any government body.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "deltakura-mcp": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./query": {
+      "types": "./dist/query/index.d.ts",
+      "default": "./dist/query/index.js"
+    },
+    "./data/procurement-stats.json": "./data/procurement-stats.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "data/procurement-stats.json",
+    "server.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "japan",
+    "open-data",
+    "procurement",
+    "houjin-bangou",
+    "corporate-number"
+  ],
+  "scripts": {
+    "build-data": "node scripts/build-data.mjs",
+    "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build-data && npm run build",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kazsakaiwork-code/deltakura.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://github.com/kazsakaiwork-code/deltakura/tree/main/mcp",
+  "bugs": {
+    "url": "https://github.com/kazsakaiwork-code/deltakura/issues"
+  }
+}
