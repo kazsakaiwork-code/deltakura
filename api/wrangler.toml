@@ -42,9 +42,11 @@ database_name = "signals"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"   # wrangler d1 create signals
 migrations_dir = "migrations"
 
-[[r2_buckets]]
-binding = "ARCHIVE"
-bucket_name = "signals-archive"           # wrangler r2 bucket create signals-archive
+# No R2 bucket, by design. R2 is a paid-subscription product: binding it makes a
+# deploy fail until someone subscribes the account, and subscribing bills the
+# card on file. The procurement table ships bundled inside the Worker instead.
+# CI (`.github/scripts/cost_guard.py`) fails on any r2_buckets block, and on
+# every other Cloudflare feature that is not on the free plan.
 
 [observability]
 enabled = true
@@ -74,10 +76,6 @@ binding = "DB"
 database_name = "signals-stg"
 database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
 
-[[env.staging.r2_buckets]]
-binding = "ARCHIVE"
-bucket_name = "signals-archive-stg"
-
 # ------------------------------------------------------------- production ---
 [env.production]
 name = "deltakura-api"
@@ -104,7 +102,3 @@ id = "REPLACE_WITH_KV_METRICS_ID"
 binding = "DB"
 database_name = "signals"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
-
-[[env.production.r2_buckets]]
-binding = "ARCHIVE"
-bucket_name = "signals-archive"

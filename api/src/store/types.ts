@@ -21,6 +21,6 @@ export interface CorporateStore {
 }
 
 export interface ProcurementStore {
-  readonly kind: 'bundled' | 'r2';
+  readonly kind: 'bundled';
   dataset(): Promise<ProcurementDatasetLike>;
 }

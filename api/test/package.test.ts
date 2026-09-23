@@ -33,12 +33,21 @@ describe('wrangler.toml', () => {
 
   it('carries placeholders, never a real account or resource id', () => {
     expect(toml).not.toMatch(/account_id/);
-    for (const binding of ['KV_INTENT', 'KV_METRICS', 'DB', 'ARCHIVE']) {
+    for (const binding of ['KV_INTENT', 'KV_METRICS', 'DB']) {
       expect(toml, binding).toContain(binding);
     }
     const ids = [...toml.matchAll(/^\s*(?:database_)?id\s*=\s*"([^"]+)"/gm)].map((m) => m[1]);
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id, id).toMatch(/^REPLACE_WITH_/);
+  });
+
+  it('binds free-tier products only: no R2 bucket in any environment', () => {
+    const active = toml
+      .split('\n')
+      .map((line) => line.replace(/#.*$/, ''))
+      .join('\n');
+    expect(active).not.toMatch(/r2_buckets/);
+    expect(active).not.toMatch(/ARCHIVE/);
   });
 
   it('defaults to dev mode and declares no custom route', () => {

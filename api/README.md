@@ -65,10 +65,15 @@ One distinct client is counted once per product, per kind, per day.
 
 | | Production | Local dev and fallback |
 |---|---|---|
-| Procurement statistics | R2 `signals-archive/stats/procurement-stats.json` | `src/data/procurement-stats.json`, bundled |
+| Procurement statistics | `src/data/procurement-stats.json`, bundled | the same bundled file |
 | Corporate register | D1 `signals` (`migrations/0001_init.sql`) | `src/data/nta-dev.json` (daily counts) + `src/data/nta-sample.json` (a fixed record sample) |
 
-Both bindings are optional. With none attached — every run until a Cloudflare account exists — the Worker answers from
+The procurement table is small and changes only when the data is rebuilt, so it
+always ships inside the Worker bundle. There is no R2 bucket: R2 needs a paid
+subscription, and it is a post-gate option that requires explicit approval
+before it can come back (see [Cost guard](#cost-guard-free-tiers-only)).
+
+Every binding is optional. With none attached — every run until a Cloudflare account exists — the Worker answers from
 the bundled JSON and says `data_source: "bundled"` in the response and in `/v0/health`. A corporate
 lookup against the sample additionally sets `complete: false` and adds a note, because a miss against
 a sample is not evidence of anything.
@@ -101,7 +106,7 @@ npm run dev            # wrangler dev --local, http://localhost:8787
 npm run dry-run        # wrangler deploy --dry-run: bundles, uploads nothing
 ```
 
-`npm run dev` and `npm run dry-run` need no Cloudflare account: `--local` simulates KV, D1 and R2 on
+`npm run dev` and `npm run dry-run` need no Cloudflare account: `--local` simulates KV and D1 on
 disk under `.wrangler/`. The KV namespace ids in `wrangler.toml` are placeholders and are ignored in
 local mode.
 
@@ -147,13 +152,40 @@ let alone served.
 ## Before this can be deployed
 
 1. **The GitHub repository** (`https://github.com/kazsakaiwork-code/deltakura`), so CI runs. Done; public visibility is a separate approval.
-2. **A Cloudflare account and API token.** Then: create `KV_INTENT`, `KV_METRICS`, D1
-   `signals`, R2 `signals-archive`; replace every `REPLACE_WITH_*` in `wrangler.toml`;
-   `wrangler secret put IP_HASH_SALT`.
+2. **A Cloudflare account and API token, chosen by the operator.** The deploy needs only
+   free-tier products: two KV namespaces and one D1 database on the Workers Free plan.
+   Then: create `KV_INTENT`, `KV_METRICS` and D1 `signals`; replace every
+   `REPLACE_WITH_*` in `wrangler.toml`; `wrangler secret put IP_HASH_SALT`.
 3. **A per-item operator approval for the first deploy.** Nothing here deploys itself.
 
 All three are pending operator approval. The custom route `api.deltakura.dev/v0/*`
 additionally waits for the domain, which is a later phase.
+
+**Deploy prerequisites that this repository cannot decide:** a deploy requires the
+`IP_HASH_SALT` secret (set with `wrangler secret put IP_HASH_SALT`, per environment;
+never committed), and the exact Cloudflare account and `workers.dev` subdomain, which
+the operator chooses. The subdomain becomes part of the public API hostname, so it is
+an operator decision, not a default.
+
+## Cost guard (free tiers only)
+
+Until a paid feature is explicitly approved, this Worker runs on free tiers only, and
+CI enforces it. `.github/scripts/cost_guard.py` runs in the `security-scan` job on
+every push and pull request, and fails the build on:
+
+| Where | What fails | Why |
+|---|---|---|
+| any `wrangler.toml` / `wrangler.json(c)`, every environment | `r2_buckets`, `queues`, `durable_objects`, `hyperdrive`, `ai`, `browser`, `vectorize`, `containers`, `dispatch_namespaces`, `pipelines`, `images`, `tail_consumers`, `logpush`, `limits`, `usage_model`, `triggers` | paid, subscription-only or unattended features. R2 in particular makes a deploy fail until the account is subscribed, and subscribing bills the payment method on file |
+| same | `workers_dev = false`, `route`, `routes`, `custom_domain` | a custom domain or route needs a registered domain, which is a purchase |
+| same | the words `plan`, `plans` or `billing` outside a comment | plan and billing selection is never a config edit |
+| same | any table or key not on the free-tier allowlist (`vars`, `kv_namespaces`, `d1_databases`, `observability`, `build`) | a new Cloudflare feature is refused until it is reviewed, not accepted until it is noticed |
+| `package.json` scripts | `wrangler r2` (and `queues`, `hyperdrive`, `vectorize`, `ai`, `pipelines`, `containers`, `dispatch-namespace`) | paid products |
+| same | `wrangler deploy`, `publish`, `versions deploy/upload` or `pages deploy` without `--dry-run` | a real deploy is a per-item operator action, never a script |
+| dependencies in `package.json`, `package-lock.json` (including transitive) and `requirements*.txt` | Stripe, Paddle, Polar, Lemon Squeezy, PayPal, OpenAI, Anthropic, Google Gemini, Cohere, Mistral, Replicate, Apify (`apify-client`) SDKs | paid-API clients have no place in a free, read-only public-data service |
+
+Run it locally with `python .github/scripts/cost_guard.py` from the repository root.
+Loosening a rule is a reviewed change to that script, made only after the paid feature
+itself has been approved.
 
 > Deltakura is an unofficial archive. It is not affiliated with, endorsed by or
 > connected to デジタル庁, 国税庁 or any other government body.

@@ -7,7 +7,7 @@
  */
 
 export interface Env {
-  /** "dev" (bundled JSON) or "prod" (D1/R2, falling back to bundled). */
+  /** "dev" (bundled JSON) or "prod" (D1, falling back to bundled). */
   DELTAKURA_MODE?: string;
   /** Comma-separated origin allowlist for CORS. */
   ALLOWED_ORIGINS?: string;
@@ -26,8 +26,8 @@ export interface Env {
   KV_METRICS?: KVNamespace;
   /** Corporate-number change register in production. */
   DB?: D1Database;
-  /** Archive bucket; holds the procurement table in production. */
-  ARCHIVE?: R2Bucket;
+  // No R2 binding: the procurement table is bundled. R2 is a paid subscription
+  // and stays out until it is explicitly approved (see README, "Cost guard").
 }
 
 export function isProd(env: Env): boolean {

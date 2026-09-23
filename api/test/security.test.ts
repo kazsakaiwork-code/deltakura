@@ -38,17 +38,17 @@ describe('error responses carry no internal detail', () => {
   it('returns a generic 500 when a handler throws', async () => {
     const h = harness();
     const exploding = {
-      get: () => {
+      prepare: () => {
         throw new Error('SECRET-INTERNAL-DETAIL at /srv/worker/index.ts:42');
       }
     };
-    // The procurement store reads R2 in prod mode; a throwing bucket stands in for any failure.
-    h.env = { ...h.env, DELTAKURA_MODE: 'prod', IP_HASH_SALT: 'x', ARCHIVE: exploding as unknown as R2Bucket } as Env;
+    // The corporate store reads D1 in prod mode; a throwing database stands in for any failure.
+    h.env = { ...h.env, DELTAKURA_MODE: 'prod', IP_HASH_SALT: 'x', DB: exploding as unknown as D1Database } as Env;
     const errors: unknown[] = [];
     const original = console.error;
     console.error = (...args: unknown[]) => void errors.push(args);
     try {
-      const { status, body } = await call(h, '/v0/procurement/stats');
+      const { status, body } = await call(h, '/v0/corporate/diff-summary?from=2026-09-01&to=2026-09-07');
       expect(status).toBe(503);
       expect(JSON.stringify(body)).not.toContain('SECRET-INTERNAL-DETAIL');
       expect(JSON.stringify(body)).not.toContain('/srv/');

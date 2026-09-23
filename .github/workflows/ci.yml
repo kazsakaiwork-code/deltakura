@@ -35,6 +35,13 @@ jobs:
           persist-credentials: false
       - name: Scan tree and full history
         run: python3 .github/scripts/security_scan.py --history
+      - name: Cost guard (free tiers only)
+        # Fails on a paid or subscription-only Cloudflare feature in any
+        # wrangler config (R2, Queues, Durable Objects, Hyperdrive, AI, Logpush,
+        # custom domains, plan/billing keys, anything off the allowlist), on a
+        # real `wrangler deploy` or `wrangler r2` in package scripts, and on a
+        # paid-API SDK in any dependency manifest or lockfile. See api/README.md.
+        run: python3 .github/scripts/cost_guard.py
 
   crawlers:
     name: crawlers (python)

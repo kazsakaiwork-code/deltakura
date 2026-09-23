@@ -159,7 +159,7 @@ page (`/ja/privacy.html`, `/en/privacy.html`). There is no email address, by des
 
 Nothing is deployed, published or listed yet. The repository lives at
 https://github.com/kazsakaiwork-code/deltakura; the Firebase
-project id, the Worker hostnames and the Cloudflare/D1/KV/R2 ids in `api/wrangler.toml` are
+project id, the Worker hostnames and the Cloudflare/D1/KV ids in `api/wrangler.toml` are
 placeholders waiting on their approvals. The crawler User-Agent is
 `DeltakuraBot/0.1 (+https://github.com/kazsakaiwork-code/deltakura)`; that URL resolves for everyone once the
 repository is public, with no code change.

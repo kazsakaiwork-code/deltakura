@@ -36,7 +36,7 @@ describe('routing and metadata', () => {
     expect(body.status).toBe('ok');
     expect(body.mode).toBe('dev');
     expect(body.data_sources).toMatchObject({ procurement: 'bundled', corporate: 'bundled' });
-    expect(body.bindings).toEqual({ KV_INTENT: false, KV_METRICS: false, DB: false, ARCHIVE: false });
+    expect(body.bindings).toEqual({ KV_INTENT: false, KV_METRICS: false, DB: false });
     expect(body.intent_products).toContain('bet_a_report');
   });
 

@@ -92,8 +92,7 @@ async function health(env: Env): Promise<Response> {
     bindings: {
       KV_INTENT: Boolean(env.KV_INTENT),
       KV_METRICS: Boolean(env.KV_METRICS),
-      DB: Boolean(env.DB),
-      ARCHIVE: Boolean(env.ARCHIVE)
+      DB: Boolean(env.DB)
     },
     bundled: bundledMeta,
     intent_products: products(env)
