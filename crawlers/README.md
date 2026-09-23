@@ -31,7 +31,7 @@ are working material and are not published.
 | `pportal/` | A | 調達ポータル 落札実績 open data | **Y** | private `pportal/`: 313,568 awards FY2013–FY2026. Published: `data/published/pportal/stats_v0.csv` |
 | `ats_registry/` | B | Greenhouse + Lever public boards | **Y, held by `BET_B_LIVE=false`** | private `ats/` only: 135 companies, 23,540 postings. Nothing published. |
 | `_lib/` | — | shared: HTTP, ToS gate, anonymiser, JP helpers, paths | — | — |
-| `tools/` | — | maintenance: clearance-matrix projection | — | `tos_matrix.csv` |
+| `tools/` | — | maintenance: clearance-matrix projection; the private nightly/weekly runner | — | `tos_matrix.csv`; private run logs |
 | `tests/` | — | runnable test suite, no network | — | — |
 
 ## Requirements
@@ -71,6 +71,30 @@ python crawlers/pportal/stats.py               # -> data/published/pportal/stats
 python crawlers/ats_registry/verify.py  --daily-cap 400
 python crawlers/ats_registry/collect.py --daily-cap 400
 ```
+
+### Scheduled private collection
+
+`tools/run_private.py` is what a maintainer's scheduler calls, so that the
+private store keeps record-level history without anyone remembering to run it:
+
+```bash
+python crawlers/tools/run_private.py baseline   # once: record the Bet-B clearance-gate fingerprints
+python crawlers/tools/run_private.py nightly    # Bet B first_seen + Bet C record-level top-up
+python crawlers/tools/run_private.py weekly     # Bet A refresh, then rebuild the aggregates locally
+```
+
+`nightly` first re-reads the robots.txt of every ATS API host and the operators'
+legal index pages and compares them with the recorded fingerprints; any change,
+error or missing baseline halts that source until a maintainer has reviewed it.
+It then makes at most one request per board per night (conditional when the
+board is already held), keeps a host halted for the rest of the night after
+three consecutive failures, never sends a host more than 400 requests in a
+night, skips boards on the opt-out blocklist, and stores only the field
+allow-list in `ats_registry/ats.py`. `weekly` downloads a Bet-A file only when
+the publisher's listing shows it was re-issued or changed, and regenerates
+`data/published/` in the checkout without committing it. Both append one row per
+source to the private run logs, on failure too, and write a transcript. Nothing
+in the runner commits, pushes or publishes.
 
 Every script takes `--dry-run` or `--help`. All of them are idempotent: a
 re-run costs a conditional request per file and rewrites nothing unchanged.
@@ -130,7 +154,7 @@ keeps one out of the manifest columns too — this repository is public.
 ## Tests
 
 ```bash
-python crawlers/tests/run_tests.py          # 77 tests, no network, ~1 s
+python crawlers/tests/run_tests.py          # 101 tests, no network, ~1 s
 python crawlers/tests/run_tests.py -v
 python crawlers/tests/run_tests.py anonymize
 ```
@@ -149,6 +173,11 @@ python crawlers/tests/run_tests.py anonymize
   cleared but held until go-live is approved, the User-Agent carries a contact
   URL, an uncleared row publishes no deep link, and the shipped clearance matrix
   still matches the internal copy.
+* `test_run_private.py` — the private runner: one fetch per board per night
+  across re-runs, a halted host stays halted, the 400-per-night cap, the
+  blocklist, the payload and stored-column allow-lists, the 304 closed rule,
+  the clearance gate failing closed (changed, unreachable or no baseline),
+  Retry-After handling, and Bet-A change detection from the listing page.
 * `test_parsers.py` — both collectors against fixtures taken from real payloads,
   the 府省/入札方式 code tables against the published spec, schema-drift
   detection for both ATS endpoints, and the Japan location classifier (a bare

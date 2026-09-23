@@ -12,7 +12,9 @@ Rules enforced here (company policy, not caller options):
      on-disk cache; an unchanged resource is not re-fetched within 24 h.
   5. Never logs in, never sends credentials, never follows a login redirect,
      never touches a CAPTCHA. There is no code path here that can.
-  6. 429/503 -> exponential backoff, at most one retry per hour per host.
+  6. 429/5xx -> back off and retry once. A Retry-After of up to 60 s is
+     honoured (never waiting less than our own backoff); a longer one is not
+     waited for and counts as a failure.
      Three consecutive 4xx/5xx on a host pause that host for the run and raise
      HostPaused, which the caller reports rather than retries.
   7. A per-host daily request cap (default 20, the week-1 prototype cap) is
@@ -23,6 +25,7 @@ Standard library + requests only.
 
 from __future__ import annotations
 
+import email.utils
 import gzip
 import hashlib
 import json
@@ -50,6 +53,7 @@ DEFAULT_MAX_BYTES = 300 * 1024 * 1024  # 300 MB hard cap on a single response
 PROTOTYPE_DAILY_CAP = 20               # requests per host per day, prototype mode
 ROBOTS_TTL_SEC = 24 * 3600
 CACHE_TTL_SEC = 24 * 3600
+RETRY_AFTER_MAX_SEC = 60.0             # longest Retry-After we will wait for
 
 
 class RobotsDisallowed(RuntimeError):
@@ -236,6 +240,21 @@ class PoliteSession:
             return "no robots.txt served (no directives) - allowed"
         return "allowed" if parser.can_fetch(self.user_agent, url) else "DISALLOWED"
 
+    def refresh_robots(self, url: str) -> str:
+        """Re-fetch robots.txt for `url`'s host now, ignoring the 24 h cache.
+
+        Returns the body as served ("" when no usable file is served). The
+        fresh copy also becomes the one this session obeys, so a clearance
+        check and the crawl that follows it read the same directives. An
+        unreachable robots.txt raises RobotsDisallowed, exactly as in `get`.
+        """
+        parts = urllib.parse.urlsplit(url)
+        origin = f"{parts.scheme}://{parts.netloc}"
+        self._robots.pop(origin, None)
+        self._state["robots"].pop(origin, None)
+        self._robots_for(url)
+        return self._state["robots"].get(origin, {}).get("body", "")
+
     # --------------------------------------------------------------- delay
     def _wait(self, netloc: str) -> None:
         last = self._last_hit.get(netloc)
@@ -266,6 +285,30 @@ class PoliteSession:
                 f"{host} paused after 3 consecutive failures ({why}); "
                 "raise this with a maintainer rather than retrying"
             )
+
+    def _retry_wait(self, resp, host: str) -> Optional[float]:
+        """Seconds to wait before the single retry of a 429/5xx, or None.
+
+        None means "do not retry": the status is not retryable, or the server
+        asked for a Retry-After longer than the 60 s we are prepared to honour.
+        """
+        if not (resp.status_code == 429 or resp.status_code >= 500):
+            return None
+        backoff = min(RETRY_AFTER_MAX_SEC, self._host_delay.get(host, self.min_delay) * 8)
+        raw = (resp.headers.get("Retry-After") or "").strip()
+        if not raw:
+            return backoff
+        try:
+            asked = float(raw)
+        except ValueError:
+            try:
+                when = email.utils.parsedate_to_datetime(raw)
+                asked = (when - datetime.now(timezone.utc)).total_seconds()
+            except (TypeError, ValueError, IndexError):
+                return backoff
+        if asked > RETRY_AFTER_MAX_SEC:
+            return None
+        return max(backoff, asked, 0.0)
 
     def _read_capped(self, resp: requests.Response) -> bytes:
         body = resp.raw.read(self.max_bytes + 1, decode_content=True)
@@ -315,9 +358,11 @@ class PoliteSession:
                     self._fail_streak[host] = 0
                     raise NotModified(f"{url} unchanged (304)")
 
-                if resp.status_code in (429, 503) and attempt == 1:
-                    time.sleep(min(60.0, self._host_delay.get(host, self.min_delay) * 8))
-                    continue
+                if attempt == 1:
+                    wait = self._retry_wait(resp, host)
+                    if wait is not None:
+                        time.sleep(wait)
+                        continue
 
                 if resp.status_code >= 400:
                     self._note_failure(host, f"HTTP {resp.status_code}")
@@ -418,9 +463,11 @@ class PoliteSession:
                 )
                 self._last_hit[host] = time.monotonic()
                 self._bump_count(host)
-                if resp.status_code in (429, 503) and attempt == 1:
-                    time.sleep(min(60.0, self._host_delay.get(host, self.min_delay) * 8))
-                    continue
+                if attempt == 1:
+                    wait = self._retry_wait(resp, host)
+                    if wait is not None:
+                        time.sleep(wait)
+                        continue
                 if resp.status_code >= 400:
                     self._note_failure(host, f"HTTP {resp.status_code}")
                     raise RuntimeError(f"{url} -> HTTP {resp.status_code}")

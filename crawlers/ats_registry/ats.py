@@ -18,6 +18,7 @@ Lever: https://api.lever.co/v0/postings/<site>?mode=json
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------- go-live ---
@@ -91,12 +92,37 @@ def list_url(ats: str, token: str) -> str:
     raise ValueError(f"unsupported ATS {ats!r}")
 
 
+#: The field allow-list, applied at parse time and fail-closed: `parse()` builds
+#: each posting from exactly these keys, picked by name, so an unrecognised field
+#: in the payload - including one a schema change adds tomorrow - is never
+#: carried. `commitment` and `team` are short structured category labels used
+#: only to derive a controlled-vocabulary employment type; they are not stored
+#: verbatim. Never stored, in any form: the description body or any other prose,
+#: recruiter / hiring-manager / contact names, emails or phone numbers,
+#: compensation text, candidate data.
+PAYLOAD_FIELDS = (
+    "job_id", "title", "location", "url", "created_at", "updated_at",
+    "commitment", "team",
+)
+
+
 def _clean(value: Any) -> str:
     return str(value).strip() if value is not None else ""
 
 
+def _epoch_ms_to_iso(value: Any) -> str:
+    """Lever timestamps are epoch milliseconds; store them as ISO-8601 UTC."""
+    if value in (None, ""):
+        return ""
+    try:
+        seconds = float(value) / 1000.0
+    except (TypeError, ValueError):
+        return ""
+    return datetime.fromtimestamp(seconds, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def parse(ats: str, payload: Any) -> List[Dict[str, str]]:
-    """Return a list of {job_id, title, location, url, commitment, team}.
+    """Return a list of dicts keyed by exactly `PAYLOAD_FIELDS`.
 
     Raises ValueError on a payload shape we do not recognise, so a silent
     schema drift becomes a visible failure rather than an empty board.
@@ -114,6 +140,9 @@ def parse(ats: str, payload: Any) -> List[Dict[str, str]]:
                     "title": _clean(job.get("title")),
                     "location": _clean(location),
                     "url": _clean(job.get("absolute_url")),
+                    # The job-board list endpoint carries no creation date.
+                    "created_at": "",
+                    "updated_at": _clean(job.get("updated_at")),
                     "commitment": "",
                     "team": "",
                 }
@@ -132,6 +161,8 @@ def parse(ats: str, payload: Any) -> List[Dict[str, str]]:
                     "title": _clean(job.get("text")),
                     "location": _clean(cats.get("location")),
                     "url": _clean(job.get("hostedUrl")),
+                    "created_at": _epoch_ms_to_iso(job.get("createdAt")),
+                    "updated_at": _epoch_ms_to_iso(job.get("updatedAt")),
                     "commitment": _clean(cats.get("commitment")),
                     "team": _clean(cats.get("team")),
                 }

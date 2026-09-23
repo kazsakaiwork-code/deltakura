@@ -30,7 +30,7 @@ import csv
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -67,6 +67,15 @@ JOBS_COLUMNS = [
     "source_id",
     "tos_status",
     "attribution",
+    # Added 2026-09-24. The posting's own dates, when the ATS supplies them, and
+    # our provenance: which endpoint the record came from, when a payload
+    # carrying it was last retrieved (200), and when its board was last checked
+    # successfully (200 or 304). Older rows leave them blank until re-observed.
+    "ats_created_at",
+    "ats_updated_at",
+    "source_url",
+    "retrieved_at",
+    "checked_at",
 ]
 
 RUN_LOG_COLUMNS = [
@@ -93,6 +102,147 @@ def write_jobs(path: Path, jobs: Dict[str, Dict[str, str]]) -> None:
         writer.writeheader()
         for key in sorted(jobs):
             writer.writerow({c: jobs[key].get(c, "") for c in JOBS_COLUMNS})
+
+
+def board_rows(jobs: Dict[str, Dict[str, str]], ats: str, token: str) -> List[str]:
+    """Every posting id we hold for one board, open or closed."""
+    return [
+        pid for pid, row in jobs.items()
+        if row["ats"] == ats and row["company_slug"] == token
+    ]
+
+
+def present_at_last_crawl(jobs: Dict[str, Dict[str, str]], held: List[str]) -> List[str]:
+    """The postings the board's last successful payload contained.
+
+    A 304 says "the payload is byte-for-byte what you saw last time", so it
+    confirms exactly these - open and not already missed - and nothing else. A
+    posting that had already dropped out stays dropped out, so a board that
+    answers 304 for weeks still closes the postings it lost.
+    """
+    return [
+        pid for pid in held
+        if jobs[pid].get("status") != "closed"
+        and (jobs[pid].get("consecutive_misses") or "0") == "0"
+    ]
+
+
+def confirm_unchanged(jobs: Dict[str, Dict[str, str]], present: List[str],
+                      now: str, tos_status: str) -> None:
+    """Record a 304: every posting in the last payload is still live."""
+    for pid in present:
+        row = jobs[pid]
+        row["last_seen_at"] = now
+        row["checked_at"] = now
+        row["consecutive_misses"] = "0"
+        row["tos_status"] = tos_status
+
+
+def observe_board(
+    jobs: Dict[str, Dict[str, str]],
+    board: Dict[str, str],
+    postings: List[Dict[str, str]],
+    *,
+    now: str,
+    clearance: "tos.Clearance",
+    source_url: str,
+    japan_only: bool = False,
+) -> Tuple[List[str], int, int]:
+    """Apply one successful (200) payload. Returns (seen ids, new, Japan)."""
+    name, token = board["ats"], board["board_token"].strip()
+    seen: List[str] = []
+    new = jp = 0
+    for post in postings:
+        pid = ats_mod.posting_id(name, token, post["job_id"])
+        is_jp, pref, remote, emp, func, norm = japan.classify(
+            post["location"], post["title"], post["commitment"]
+        )
+        if is_jp:
+            jp += 1
+        if japan_only and not is_jp:
+            continue
+        seen.append(pid)
+        existing = jobs.get(pid)
+        if existing is None:
+            new += 1
+            jobs[pid] = {
+                "posting_id": pid,
+                "ats": name,
+                "company_slug": token,
+                "company_name": board.get("company_name", ""),
+                "company_domain": board.get("company_domain", ""),
+                "hq_country": board.get("hq_country", ""),
+                "job_title": post["title"],
+                "job_title_normalized": norm,
+                "function_bucket": func,
+                "location_raw": post["location"],
+                "is_japan": "Y" if is_jp else "N",
+                "japan_prefecture": pref,
+                "remote_flag": "Y" if remote else "N",
+                "employment_type": emp,
+                "job_url": post["url"],
+                "first_seen_at": now,
+                "last_seen_at": now,
+                "closed_at": "",
+                "status": "open",
+                "consecutive_misses": "0",
+                "source_id": f"ats_{name}",
+                "tos_status": clearance.tos_status,
+                "attribution": clearance.attribution,
+                "ats_created_at": post.get("created_at", ""),
+                "ats_updated_at": post.get("updated_at", ""),
+                "source_url": source_url,
+                "retrieved_at": now,
+                "checked_at": now,
+            }
+        else:
+            # first_seen_at is written once and never revised. A retitled
+            # posting keeps its original first_seen date.
+            existing["last_seen_at"] = now
+            existing["consecutive_misses"] = "0"
+            existing["status"] = "open"
+            existing["closed_at"] = ""
+            existing["job_title"] = post["title"]
+            existing["job_title_normalized"] = norm
+            existing["location_raw"] = post["location"]
+            existing["is_japan"] = "Y" if is_jp else "N"
+            existing["japan_prefecture"] = pref
+            existing["tos_status"] = clearance.tos_status
+            existing["ats_created_at"] = (
+                post.get("created_at", "") or existing.get("ats_created_at", "")
+            )
+            existing["ats_updated_at"] = (
+                post.get("updated_at", "") or existing.get("ats_updated_at", "")
+            )
+            existing["source_url"] = source_url
+            existing["retrieved_at"] = now
+            existing["checked_at"] = now
+    return seen, new, jp
+
+
+def close_missing(jobs: Dict[str, Dict[str, str]], crawled_boards: set,
+                  seen_ids: set, today: str, now: str = "") -> int:
+    """The closed rule, applied to boards this run crawled successfully only.
+
+    A posting absent from two consecutive successful crawls is closed, with
+    `closed_at` the first crawl that missed it. Returns the number closed now.
+    """
+    closed = 0
+    for pid, row in jobs.items():
+        if (row["ats"], row["company_slug"]) not in crawled_boards:
+            continue
+        if now:
+            row["checked_at"] = now
+        if pid in seen_ids or row.get("status") == "closed":
+            continue
+        misses = int(row.get("consecutive_misses") or 0) + 1
+        row["consecutive_misses"] = str(misses)
+        if misses == 1:
+            row["closed_at"] = today       # provisional: first crawl that missed it
+        if misses >= 2:
+            row["status"] = "closed"
+            closed += 1
+    return closed
 
 
 def run(argv: Optional[List[str]] = None) -> int:
@@ -151,10 +301,7 @@ def run(argv: Optional[List[str]] = None) -> int:
     for i, board in enumerate(boards, start=1):
         name, token = board["ats"], board["board_token"].strip()
         url = ats_mod.list_url(name, token)
-        held = [
-            pid for pid, row in jobs.items()
-            if row["ats"] == name and row["company_slug"] == token
-        ]
+        held = board_rows(jobs, name, token)
         try:
             resp = session.get(url, accept="application/json")
             postings = ats_mod.parse(name, json.loads(resp.text()))
@@ -175,15 +322,13 @@ def run(argv: Optional[List[str]] = None) -> int:
                           f"FAILED on unconditional retry {exc}")
                     continue
             else:
-                # An unchanged board is a *successful* crawl: every posting we
-                # hold for it is still live, so refresh last_seen and reset
-                # misses.
+                # An unchanged board is a *successful* crawl: every posting the
+                # last payload carried is still live.
                 ok += 1
                 crawled_boards.add((name, token))
-                for pid in held:
-                    seen_ids.add(pid)
-                    jobs[pid]["last_seen_at"] = now
-                    jobs[pid]["consecutive_misses"] = "0"
+                present = present_at_last_crawl(jobs, held)
+                confirm_unchanged(jobs, present, now, clearances[name].tos_status)
+                seen_ids.update(present)
                 print(f"[ats] {i:>3}/{len(boards)} {name}:{token:<28} unchanged (304)")
                 continue
         except (http.DailyCapReached, http.HostPaused) as exc:
@@ -196,76 +341,18 @@ def run(argv: Optional[List[str]] = None) -> int:
 
         ok += 1
         crawled_boards.add((name, token))
-        board_new = board_jp = 0
-        for post in postings:
-            pid = ats_mod.posting_id(name, token, post["job_id"])
-            is_jp, pref, remote, emp, func, norm = japan.classify(
-                post["location"], post["title"], post["commitment"]
-            )
-            if is_jp:
-                board_jp += 1
-            if args.japan_only and not is_jp:
-                continue
-            seen_ids.add(pid)
-            existing = jobs.get(pid)
-            if existing is None:
-                board_new += 1
-                jobs[pid] = {
-                    "posting_id": pid,
-                    "ats": name,
-                    "company_slug": token,
-                    "company_name": board.get("company_name", ""),
-                    "company_domain": board.get("company_domain", ""),
-                    "hq_country": board.get("hq_country", ""),
-                    "job_title": post["title"],
-                    "job_title_normalized": norm,
-                    "function_bucket": func,
-                    "location_raw": post["location"],
-                    "is_japan": "Y" if is_jp else "N",
-                    "japan_prefecture": pref,
-                    "remote_flag": "Y" if remote else "N",
-                    "employment_type": emp,
-                    "job_url": post["url"],
-                    "first_seen_at": now,
-                    "last_seen_at": now,
-                    "closed_at": "",
-                    "status": "open",
-                    "consecutive_misses": "0",
-                    "source_id": f"ats_{name}",
-                    "tos_status": clearances[name].tos_status,
-                    "attribution": clearances[name].attribution,
-                }
-            else:
-                # first_seen_at is written once and never revised. A retitled
-                # posting keeps its original first_seen date.
-                existing["last_seen_at"] = now
-                existing["consecutive_misses"] = "0"
-                existing["status"] = "open"
-                existing["closed_at"] = ""
-                existing["job_title"] = post["title"]
-                existing["job_title_normalized"] = norm
-                existing["location_raw"] = post["location"]
-                existing["is_japan"] = "Y" if is_jp else "N"
-                existing["japan_prefecture"] = pref
+        seen, board_new, board_jp = observe_board(
+            jobs, board, postings, now=now, clearance=clearances[name],
+            source_url=url, japan_only=args.japan_only,
+        )
+        seen_ids.update(seen)
         new_count += board_new
         jp_count += board_jp
         print(f"[ats] {i:>3}/{len(boards)} {name}:{token:<28} "
               f"{len(postings):>4} postings, {board_jp:>3} JP, {board_new:>4} new")
 
     # Closed rule: only for boards this run actually crawled successfully.
-    closed = 0
-    for pid, row in jobs.items():
-        if (row["ats"], row["company_slug"]) not in crawled_boards:
-            continue
-        if pid in seen_ids or row.get("status") == "closed":
-            continue
-        misses = int(row.get("consecutive_misses") or 0) + 1
-        row["consecutive_misses"] = str(misses)
-        if misses == 1:
-            row["closed_at"] = today       # provisional: first crawl that missed it
-        if misses >= 2:
-            row["status"] = "closed"
-            closed += 1
+    closed = close_missing(jobs, crawled_boards, seen_ids, today, now)
 
     write_jobs(jobs_path, jobs)
     session.save_state()
