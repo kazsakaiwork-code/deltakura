@@ -47,10 +47,12 @@ jobs:
   collect:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      # The private collection store. Ephemeral: it exists only for this run.
-      DELTAKURA_DATA_DIR: ${{ runner.temp }}/deltakura-data
     steps:
+      - name: Point the private collection store at the runner's scratch space
+        # Ephemeral: it exists only for this run. Set through GITHUB_ENV because
+        # the `runner` context is not available in job-level `env:`.
+        run: echo "DELTAKURA_DATA_DIR=$RUNNER_TEMP/deltakura-data" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
