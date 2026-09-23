@@ -98,7 +98,7 @@ python crawlers/pportal/collect.py              # Bet A: bulk award open data
 python crawlers/pportal/stats.py                # -> data/published/pportal/stats_v0.csv
 python crawlers/nta_diff/collect.py             # Bet C: today's registry diff
 python crawlers/nta_diff/publish_summary.py     # -> data/published/nta/summary.json
-python crawlers/tests/run_tests.py              # 76 tests, no network
+python crawlers/tests/run_tests.py              # 77 tests, no network
 
 # MCP server / npm package (Node 22+)
 cd mcp && npm ci && npm run build-data && npm run build && npm test

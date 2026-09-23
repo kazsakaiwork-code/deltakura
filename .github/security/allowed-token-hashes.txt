@@ -1,0 +1,4 @@
+# `<hash> <path>`: a forbidden token that is legitimately present in exactly that file.
+# Keep this list short and justify each entry.
+# Each entry was reviewed: the token is a legitimate third-party string in that file.
+ccebeeafcc5ccb5f3698ea7b17d711471a70ff657a6e709946942acc51ab5186 crawlers/tos_matrix.csv

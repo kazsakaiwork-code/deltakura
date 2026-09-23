@@ -41,7 +41,7 @@ no pandas, no pyarrow, no BeautifulSoup. Normalised output is gzipped CSV rather
 than parquet so the store stays readable with nothing installed.
 
 ```bash
-python -m pip show requests   # already present on this machine
+python -m pip install --require-hashes -r crawlers/requirements.txt   # pinned, hash-checked
 ```
 
 ## Run everything
@@ -130,7 +130,7 @@ keeps one out of the manifest columns too — this repository is public.
 ## Tests
 
 ```bash
-python crawlers/tests/run_tests.py          # 76 tests, no network, ~1 s
+python crawlers/tests/run_tests.py          # 77 tests, no network, ~1 s
 python crawlers/tests/run_tests.py -v
 python crawlers/tests/run_tests.py anonymize
 ```
@@ -171,13 +171,13 @@ checkout.
 
 1. **The User-Agent contact URL resolves only once the repository is public.** It is
    `DeltakuraBot/0.1 (+https://github.com/kazsakaiwork-code/deltakura)`: the repository page,
-   chosen because `deltakura.dev` is unregistered and this phase spends nothing.
+   chosen because `deltakura.dev` is not registered.
    No code change is needed when the repository becomes public. Our own rules require a resolving contact URL before any crawl above
    the prototype cap.
 2. **The prototype cap of 20 requests/host/day was exceeded for Bet B**,
    deliberately and on the command line (`--daily-cap`), because a
    100-company registry cannot be verified inside 20 requests on two hosts.
-   Bet A (14 requests) and Bet C (2/night) stay well inside it. Needs a ruling.
+   Bet A (14 requests) and Bet C (2/night) stay well inside it.
 3. **Bet B is cleared but held.** The clearance matrix upgraded Greenhouse and
    Lever to `reuse_allowed=Y` on 2026-09-22, so the legal question is answered.
    Publication is a separate decision, pending operator approval, so `BET_B_LIVE` defaults to

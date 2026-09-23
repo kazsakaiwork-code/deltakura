@@ -1,0 +1,9 @@
+# Forbidden identifiers, stored as sha256("deltakura-security-scan-v1:" + lowercase token).
+# Read by .github/scripts/security_scan.py. The plaintext is deliberately not in
+# this repository. To add one, append `<hash> <label>`; never add the token itself.
+91c70171ce9f39a007d4935d57fcd58f2aaf27a1fcd61c086a8edd8753787f27 id-1
+d7c5dc94a8b3db913e88fa8b71f252754d9f1be734b1c93819dbe5e75718358f id-2
+ccebeeafcc5ccb5f3698ea7b17d711471a70ff657a6e709946942acc51ab5186 id-3
+3e4c10e45a98ca84685c67874aad84da7d7a0e7d7465f4efba174a752029fcdf id-4
+24d33941d3910c6c883d4c024231894f4501808c2beb84c6d66fd277ed5e2e7a id-5
+0460537f22295e1a82d31ea94670cc8247a53b2963bfabdffff1a2077c1a44b6 id-6
