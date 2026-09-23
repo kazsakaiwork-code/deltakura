@@ -64,8 +64,8 @@ export async function handleCorporateLookup(request: Request, env: Env, raw: str
   }
   if (store.partial) {
     result.notes.push(
-      'This deployment is serving a development sample, not the full archive: a miss here is not evidence ' +
-        'of anything. Attach the D1 binding for the complete register.'
+      'This deployment serves a fixed sample of corporate records, not the full archive: a miss here is not ' +
+        'evidence of anything. Daily change counts (/v0/corporate/diff-summary) are complete for the covered window.'
     );
   }
 

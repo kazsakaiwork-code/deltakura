@@ -123,8 +123,16 @@ The POST body is exactly what `api/src/routes/intent.ts` reads:
   the same browser is not double-counted. The Worker stores only a salted hash
   of it; no cookie, no raw IP, no profile.
 
-With the endpoint unset (the current state) the button confirms locally and
-posts nothing, so the site is correct before the Worker exists.
+The endpoint is live: `INTENT_ENDPOINT` in `build.py` is
+`https://deltakura-api.deltakura.workers.dev/v0/intent` (written into
+`assets/config.js`). With the endpoint unset the button would confirm locally and
+post nothing.
+
+**Counting rule.** The Worker de-duplicates to one count per client, per product,
+per kind (`view` / `click`), per UTC day. A client is only a random id the browser
+mints itself, so the count is reported as an **upper bound** on interested people,
+never as an exact figure; `/privacy.html` (methodology) says the same. See
+`api/README.md` for the known sources of over- and under-counting.
 
 ## Deploying (once a Firebase project exists)
 
@@ -138,8 +146,12 @@ firebase deploy --only hosting
 `firebase.json` sets `public: "public"`, `cleanUrls: false` (links are written
 with their real `.html` paths), CORS and JSON/RSS content types on `/data/**`
 and `/feeds/**`, and a CSP with `default-src 'none'` that allows scripts and
-styles from self plus `connect-src https://*.workers.dev` for the intent POST.
-Tighten `connect-src` to the exact Worker hostname once it exists.
+styles from self plus `connect-src 'self' https://deltakura-api.deltakura.workers.dev`
+for the intent POST: exactly the Worker host, no wildcard. `INTENT_ENDPOINT` and
+this CSP change together or the button fails silently in the browser.
+
+Always deploy with the project named explicitly:
+`firebase deploy --only hosting --project deltakura-signals`.
 
 **Deploying is a per-item operator approval.** Nothing here may be published
 without it. This directory is part of the `kazsakaiwork-code/deltakura` monorepo, and the
@@ -158,7 +170,7 @@ operator approval.
 |---|---|---|
 | `BASE_URL` | `https://deltakura-signals.web.app` | the Firebase project — feeds canonical URLs, sitemap, JSON-LD |
 | `GITHUB_ORG` / `GITHUB_ISSUES` / `GITHUB_CORE` / `GITHUB_SITE` | `github.com/kazsakaiwork-code/deltakura/…` | set. They resolve for everyone once the repository is made public. |
-| `INTENT_ENDPOINT` (`assets/config.js`) | `""` | the Cloudflare Worker |
+| `INTENT_ENDPOINT` (`assets/config.js`) | `https://deltakura-api.deltakura.workers.dev/v0/intent` | set (Worker live since 2026-09-23) |
 | `.firebaserc` `projects.default` | `deltakura-signals` | the Firebase project (the only project id the security scan accepts) |
 
 There is **no analytics beacon**, and both `/privacy.html` pages say exactly
@@ -167,8 +179,10 @@ files, and the CSP allows scripts from `self` only. If cookie-less analytics
 (Cloudflare Web Analytics) is ever added, the privacy page and the `firebase.json`
 CSP must be updated **in the same change that adds the script tag** — the page
 promises that, so the order is not optional. The same rule covers feed
-subscriber counts and the intent button: neither counts anything today, and the
-privacy page describes only what is running.
+subscriber counts and the intent button. Feed subscribers are not counted. The
+intent button is live and counts one view and one click per client, product and
+UTC day at the Worker; the privacy page describes exactly that, including what is
+sent and what is stored.
 
 `/privacy.html` carries **`Last updated: <build date> UTC`**, and that is a
 deliberate choice, not a leftover. The date is the date of the build that

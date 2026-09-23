@@ -6,9 +6,9 @@
  * publisher's free-text 変更事由 - so a personal string cannot be stored, let
  * alone served.
  *
- * Nothing here runs until a Cloudflare account is provisioned and the database
- * is created - both pending operator approval. The binding is optional and the
- * Worker falls back to bundled data.
+ * Live in the production environment since 2026-09-23 (see README, "D1"). The
+ * binding is optional and the Worker falls back to bundled data without it.
+ * `partial` stays true unless CORPORATE_RECORDS = "complete".
  */
 import { toChange, type NtaChange } from '../shared.js';
 import type { Coverage, CorporateStore, DailyCounts } from './types.js';
@@ -26,10 +26,11 @@ function rowToRecord(row: Record<string, unknown>): Record<string, string> {
   return out;
 }
 
-export function d1CorporateStore(db: D1Database): CorporateStore {
+export function d1CorporateStore(db: D1Database, opts: { partial?: boolean } = {}): CorporateStore {
   return {
     kind: 'd1',
-    partial: false,
+    // True while nta_change holds only a sample (see CORPORATE_RECORDS in env.ts).
+    partial: opts.partial ?? true,
 
     async lookup(corporateNumber: string): Promise<{ changes: NtaChange[]; coverage: Coverage }> {
       const [rows, coverage] = await Promise.all([

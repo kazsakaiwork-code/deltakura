@@ -2,7 +2,7 @@
  * Store selection.
  *
  * Production reads the corporate register from D1 when the binding is attached;
- * without it - which is every run until a Cloudflare account is provisioned -
+ * without it - every local and test run -
  * the Worker answers from the JSON bundled at build time, and says so in the
  * response and in /v0/health.
  *
@@ -20,7 +20,11 @@ export * from './types.js';
 export { bundledMeta } from './bundled.js';
 
 export function corporateStore(env: Env): CorporateStore {
-  if (isProd(env) && env.DB) return d1CorporateStore(env.DB);
+  if (isProd(env) && env.DB) {
+    // Fail-safe: D1 counts as the complete register only when the operator says so.
+    const complete = (env.CORPORATE_RECORDS ?? '').trim().toLowerCase() === 'complete';
+    return d1CorporateStore(env.DB, { partial: !complete });
+  }
   return bundledCorporateStore;
 }
 

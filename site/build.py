@@ -79,7 +79,9 @@ GITHUB_ORG = GITHUB_REPO
 GITHUB_ISSUES = GITHUB_REPO + "/issues"
 GITHUB_CORE = GITHUB_REPO + "/tree/main/crawlers"
 GITHUB_SITE = GITHUB_REPO + "/tree/main/site"
-INTENT_ENDPOINT = ""  # TODO: https://intent.deltakura.workers.dev/v0/intent
+# The live Worker (api/, env "production"). firebase.json's CSP connect-src
+# must name exactly this host; change both in the same commit.
+INTENT_ENDPOINT = "https://deltakura-api.deltakura.workers.dev/v0/intent"
 
 # --------------------------------------------------------------------------
 # The intent contract
@@ -2332,8 +2334,8 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
     analytics_ja = f"""<h3>計測について</h3>
 <p>Cookie を設置しません。ログインもアカウントもありません。他サイトを横断する追跡も行いません。</p>
 <ul class="clean">
-<li><strong>アクセス数は数えていません</strong>: アクセス解析のビーコンはこのサイトに1つも読み込まれていません。読み込まれるスクリプトは自前の2本（<code>/assets/config.js</code> と <code>/assets/intent.js</code>）だけで、配信時の Content-Security-Policy も同一オリジンのスクリプトしか許可していません。今後 Cookie を使わない計測（Cloudflare Web Analytics）を導入する場合は、このページの記述と CSP を先に更新し、同じ変更の中でのみ有効化します。</li>
-<li><strong>「更新を受け取る」ボタン</strong>: クリック数を数えるために、ブラウザの localStorage にランダムな文字列を1つ保存します。二重カウントを防ぐためだけのもので、個人と結びつく情報ではなく、他のサイトからは読めません。プライベートウィンドウでは保存されず、その場合もページは正常に動きます。現在は送信先が設定されていないため、クリックはブラウザ内で確認されるだけで、どこにも送信されません。</li>
+<li><strong>アクセス数は数えていません</strong>: アクセス解析のビーコンはこのサイトに1つも読み込まれていません。読み込まれるスクリプトは自前の2本（<code>/assets/config.js</code> と <code>/assets/intent.js</code>）だけで、配信時の Content-Security-Policy も同一オリジンのスクリプトしか許可せず、通信先はこのサイト自身と下記の計測用エンドポイントに限っています。数えているのは次の「更新を受け取る」ボタンだけです。今後 Cookie を使わない計測（Cloudflare Web Analytics）を導入する場合は、このページの記述と CSP を先に更新し、同じ変更の中でのみ有効化します。</li>
+<li><strong>「更新を受け取る」ボタン</strong>: 二重カウントを防ぐために、ブラウザの localStorage にランダムな文字列を1つ保存します。個人と結びつく情報ではなく、他のサイトからは読めません。プライベートウィンドウでは保存されず、その場合もページは正常に動きます。ボタンのあるページを開いたとき（表示）とボタンを押したとき（クリック）に、<strong>製品の種類・表示かクリックか・このランダムな文字列の3つだけ</strong>を、当プロジェクトが Cloudflare Workers 上で運用する計測用エンドポイント（<code>deltakura-api.deltakura.workers.dev</code>）へ送信します。エンドポイントはこの文字列を、非公開の値と日付で変わるソルトでハッシュ化した値だけを重複排除のために最大25時間保存し、残すのは製品ごと・日ごとの件数だけです。生の文字列も IP アドレスも保存しません。インターネット通信の性質上、IP アドレスは配信を担う Cloudflare に届き、エンドポイントの運用ログは Cloudflare 上で最長3日間保持されます。集計値は誰でも <code>https://deltakura-api.deltakura.workers.dev/v0/intent</code> で確認できます。</li>
 <li><strong>フィードの購読数も数えていません</strong>: RSS は静的ファイルとして配信しており、アクセスログを集計する仕組みは動いていません。将来 JSON フィードを自前のエンドポイントから配信する場合は、リーダーのユーザーエージェントと、日ごとに変わるソルトで /16 に丸めたうえでハッシュ化した IP を当日の集計にのみ使い、集計後に破棄します。生の IP を保存することはありません。その場合も、このページを先に更新します。</li>
 <li><strong>入力欄がありません</strong>: このサイトにフォームは1つもありません。メールアドレス、氏名、会社名、いずれも受け取る手段がありません。</li>
 </ul>
@@ -2343,8 +2345,8 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
     analytics_en = f"""<h3>Measurement</h3>
 <p>No cookies are set. There is no login and no account, and nothing here follows you to another site.</p>
 <ul class="clean">
-<li><strong>Page visits are not counted.</strong> No analytics beacon of any kind is loaded on this site. The only scripts served are two self-hosted files (<code>/assets/config.js</code> and <code>/assets/intent.js</code>), and the Content-Security-Policy sent with every page allows scripts from this origin only. If cookie-less analytics (Cloudflare Web Analytics) is added later, this page and the CSP are updated first, in the same change that switches it on.</li>
-<li><strong>The "Notify me" button</strong> stores one random string in your browser's localStorage so a second click is not counted twice. It is not tied to a person, cannot be read by another site, and is simply absent in a private window — the page still works. No endpoint is configured today, so the click is confirmed in your browser and sent nowhere.</li>
+<li><strong>Page visits are not counted.</strong> No analytics beacon of any kind is loaded on this site. The only scripts served are two self-hosted files (<code>/assets/config.js</code> and <code>/assets/intent.js</code>), and the Content-Security-Policy sent with every page allows scripts from this origin only and network connections only to this origin and the counting endpoint below. The one thing counted is the "Notify me" button. If cookie-less analytics (Cloudflare Web Analytics) is added later, this page and the CSP are updated first, in the same change that switches it on.</li>
+<li><strong>The "Notify me" button</strong> stores one random string in your browser's localStorage so a second click is not counted twice. It is not tied to a person, cannot be read by another site, and is simply absent in a private window — the page still works. When a page with the button is opened (a view) and when the button is pressed (a click), the page sends <strong>exactly three things</strong> — the product, view or click, and that random string — to our counting endpoint, <code>deltakura-api.deltakura.workers.dev</code>, which this project runs on Cloudflare Workers. The endpoint keeps only a hash of the string, salted with a secret value and the date, for at most 25 hours to de-duplicate, and keeps nothing but per-product daily counts after that. Neither the raw string nor your IP address is stored by the counter. As with any web request, your IP address reaches Cloudflare, which runs the endpoint, and Cloudflare keeps the endpoint's operational logs for up to 3 days. Anyone can read the totals at <code>https://deltakura-api.deltakura.workers.dev/v0/intent</code>.</li>
 <li><strong>Feed subscribers are not counted either.</strong> The RSS feed is a static file and nothing here aggregates access logs. If a JSON feed is later served from an endpoint of our own, it will use the reader's user agent plus a hash of the IP truncated to /16 with a salt that rotates daily, for that day's aggregate only, and then discard it. A raw IP address would never be stored — and this page would be updated before that ships.</li>
 <li><strong>There is no input field.</strong> This site has no form at all — no way to submit an email address, a name or a company.</li>
 </ul>
@@ -2363,6 +2365,8 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
 </ul>
 <h3>数字の作り方</h3>
 <p>各ページの中央値と四分位のうち、セクター全体の値は推定値で、† を付けています。元データが 年度 × 都道府県 × セクター で集計済みのため、セクター全体の中央値は直接は読み出せません。各都道府県バケットの5点（最小・Q1・中央値・Q3・最大）を区分線形の分布とみなし、件数で重み付けして合成した分布を二分法で反転して求めています。件数・合計・最小・最大、および都道府県ごとの中央値・四分位は正確な値です。</p>
+<h3>「更新を受け取る」の件数の数え方</h3>
+<p>ボタンの表示とクリックは、<strong>ブラウザ（クライアント）ごと・製品ごと・1日（UTC）ごとに1回</strong>に重複排除して数えます。クライアントの区別はブラウザが自分で作るランダムな文字列に頼っているため、同じ人が別のブラウザや消去後のブラウザから押せば別に数えられ、機械的に水増しすることも防げません。そのためこの件数は、関心を持った人数の<strong>上限</strong>として扱い、そう報告します。</p>
 <h3>公式データではありません</h3>
 <p>ここは公開情報を機械的に集めた非公式アーカイブです。収集漏れも解析誤りも起こり得ます。重要な判断の前には、各ページの出典 URL から原本をご確認ください。無保証です。</p>"""
 
@@ -2378,6 +2382,8 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
 </ul>
 <h3>How the numbers are made</h3>
 <p>On each statistics page, the sector-wide median and quartiles are estimates and carry a dagger. The source statistics are pre-aggregated at fiscal year x prefecture x sector, so a sector-wide median cannot be read off the file. Each prefecture bucket's five order statistics are treated as a piecewise-linear distribution, mixed by award count, and the mixture is inverted by bisection. Counts, totals, minimum, maximum, and each prefecture's own median and quartiles are exact.</p>
+<h3>How "Notify me" is counted</h3>
+<p>Views and clicks are de-duplicated to <strong>one per client (browser), per product, per UTC day</strong>. A client is told apart only by a random string the browser generates itself, so the same person on another browser, or after clearing storage, counts again, and a script can inflate the count. The number is therefore treated, and reported, as an <strong>upper bound</strong> on the people who showed interest.</p>
 <h3>This is not an official source</h3>
 <p>It is an unofficial archive built by automated collection of public information. Gaps and parsing errors are possible. Before relying on a number, open the source URL given on the page. Provided without warranty.</p>"""
 
@@ -2628,7 +2634,10 @@ Site built: {built_at[:10]} (UTC, like every date and timestamp on this site).
 ## Rules this project holds itself to
 
 - No email address is collected anywhere; there is no form on the site.
-- No cookies, and no analytics beacon: page visits are not counted at all today.
+- No cookies, and no analytics beacon: page visits are not counted. The only
+  counter is the "Notify me" button (one view and one click per product per
+  browser per UTC day, sent as a salted hash to the project's own endpoint;
+  reported as an upper bound).
   If cookie-less analytics is added later, /ja/privacy.html and /en/privacy.html
   and the Content-Security-Policy are updated in the same change.
 - Individuals, including sole proprietors, are masked at ingestion. No winner
@@ -2825,8 +2834,9 @@ def main(argv=None):
     write(OUT / "assets" / "intent.js", JS)
     write(
         OUT / "assets" / "config.js",
-        "/* Runtime configuration. The intent endpoint is filled in once the\n"
-        "   Cloudflare Worker exists. Empty means: count locally, post nothing. */\n"
+        "/* Runtime configuration. intentEndpoint is the project's Cloudflare\n"
+        "   Worker; the CSP connect-src allows exactly its host. Empty would mean:\n"
+        "   confirm locally, post nothing. */\n"
         'window.DELTAKURA = { intentEndpoint: "%s" };\n' % INTENT_ENDPOINT,
     )
 

@@ -31,14 +31,37 @@ describe('package.json', () => {
 describe('wrangler.toml', () => {
   const toml = read('wrangler.toml');
 
-  it('carries placeholders, never a real account or resource id', () => {
+  // Split into [top level, staging, production] at the environment headers.
+  const prodAt = toml.indexOf('[env.production]');
+  const stagingAt = toml.indexOf('[env.staging]');
+  const idsIn = (text: string) =>
+    [...text.matchAll(/^\s*(?:database_)?id\s*=\s*"([^"]+)"/gm)].map((m) => m[1]);
+
+  it('never carries an account id', () => {
     expect(toml).not.toMatch(/account_id/);
     for (const binding of ['KV_INTENT', 'KV_METRICS', 'DB']) {
       expect(toml, binding).toContain(binding);
     }
-    const ids = [...toml.matchAll(/^\s*(?:database_)?id\s*=\s*"([^"]+)"/gm)].map((m) => m[1]);
+  });
+
+  it('keeps placeholders for the top level and staging', () => {
+    expect(stagingAt).toBeGreaterThan(0);
+    expect(prodAt).toBeGreaterThan(stagingAt);
+    const ids = idsIn(toml.slice(0, prodAt));
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id, id).toMatch(/^REPLACE_WITH_/);
+  });
+
+  it('gives production real resource ids (KV: 32 hex, D1: UUID), nothing else', () => {
+    const ids = idsIn(toml.slice(prodAt));
+    expect(ids).toHaveLength(3);
+    for (const id of ids) {
+      expect(id, id).toMatch(/^([0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/);
+    }
+  });
+
+  it('does not let production claim the complete register', () => {
+    expect(toml.slice(prodAt)).toMatch(/CORPORATE_RECORDS\s*=\s*"sample"/);
   });
 
   it('binds free-tier products only: no R2 bucket in any environment', () => {
@@ -68,6 +91,7 @@ describe('no maintainer-identifying or machine-specific strings', () => {
     'tsconfig.json',
     'README.md',
     'scripts/build-data.mjs',
+    'scripts/d1-seed.mjs',
     'migrations/0001_init.sql'
   ];
 

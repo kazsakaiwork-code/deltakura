@@ -19,6 +19,13 @@ export interface Env {
   IP_HASH_SALT?: string;
   /** Release marker surfaced by /v0/health. */
   RELEASE?: string;
+  /**
+   * What the D1 `nta_change` table holds: "complete" only once the full
+   * collected register has been loaded. Anything else (the default) means it
+   * holds a sample, and every lookup says `complete: false`, because a miss
+   * against a sample is not evidence of anything.
+   */
+  CORPORATE_RECORDS?: string;
 
   /** Intent counters (the pay-intent metric). */
   KV_INTENT?: KVNamespace;

@@ -2,11 +2,18 @@
 #
 # Deltakura v0 read API.
 #
-# EVERY ID BELOW IS A PLACEHOLDER. No Cloudflare account exists yet, so nothing
-# here has been created and nothing has been deployed. `wrangler dev --local`
-# works offline against local simulations of these bindings and against the JSON
-# bundled by `npm run build-data`; `wrangler deploy` must not be run until an
-# account exists and the first deploy has a per-item operator approval.
+# Environments:
+#   (top level)   local development only. Every id is a placeholder, which is
+#                 intentional: `wrangler dev --local` ignores them, and a plain
+#                 `wrangler deploy` without --env fails on them instead of
+#                 overwriting production with dev-mode settings.
+#   staging       placeholders; nothing has been created for it.
+#   production    LIVE on the dedicated Workers Free account, served at
+#                 https://deltakura-api.deltakura.workers.dev
+#                 Deploy only with `npx wrangler deploy --env production`, after
+#                 `npx wrangler whoami` shows the Deltakura account. `npm run
+#                 deploy` exits 1 on purpose: a deploy is an operator action.
+# The account id is never written here; wrangler reads CLOUDFLARE_ACCOUNT_ID.
 
 name = "deltakura-api"
 main = "src/index.ts"
@@ -89,16 +96,23 @@ RELEASE = "0.1.0"
 ALLOWED_ORIGINS = "https://deltakura-signals.web.app,https://deltakura-signals.firebaseapp.com"
 RATE_LIMIT_PER_MINUTE = "60"
 INTENT_RATE_LIMIT_PER_MINUTE = "20"
+# D1 holds the published daily counts (complete for the covered window) and the
+# committed 1,500-record sample, not the full register, so lookups report
+# complete=false. Set to "complete" only after the full register is loaded.
+CORPORATE_RECORDS = "sample"
 
+# Created 2026-09-23 on the dedicated Deltakura account (Workers Free).
+# Resource ids are not secrets; the account id and IP_HASH_SALT never go here.
 [[env.production.kv_namespaces]]
 binding = "KV_INTENT"
-id = "REPLACE_WITH_KV_INTENT_ID"
+id = "c38409cf5fc94a219ea7440aa1a9158a"   # KV namespace "KV_INTENT"
 
 [[env.production.kv_namespaces]]
 binding = "KV_METRICS"
-id = "REPLACE_WITH_KV_METRICS_ID"
+id = "786cc1928cd349b3a076ccad84361c07"   # KV namespace "KV_METRICS"
 
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "signals"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "2ba9e92d-a6df-4f22-a8ae-d027f11deeea"   # D1 "signals", region APAC
+migrations_dir = "migrations"

@@ -14,7 +14,7 @@ export interface DailyCounts {
 
 export interface CorporateStore {
   readonly kind: 'bundled' | 'd1';
-  /** True when this store holds only a development sample. */
+  /** True when this store holds only a sample of records (bundled, or D1 not marked complete). */
   readonly partial: boolean;
   lookup(corporateNumber: string): Promise<{ changes: NtaChange[]; coverage: Coverage }>;
   dailyCounts(from: string, to: string, byKind: boolean): Promise<DailyCounts>;
