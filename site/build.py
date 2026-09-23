@@ -75,6 +75,8 @@ BASE_URL = "https://deltakura-signals.web.app"  # TODO: the Firebase project id
 # live at github.com/kazsakaiwork-code/deltakura. There is no GitHub organisation;
 # every "GitHub" link points at the repository itself.
 GITHUB_REPO = "https://github.com/kazsakaiwork-code/deltakura"
+OPERATOR_NAME = "Sirevo"
+OPERATOR_URL = "https://sirevo.jp/"
 GITHUB_ORG = GITHUB_REPO
 GITHUB_ISSUES = GITHUB_REPO + "/issues"
 GITHUB_CORE = GITHUB_REPO + "/tree/main/crawlers"
@@ -956,6 +958,7 @@ def render_page(
 <div>
 <h4>{e(t(lang, "運営", "Project"))}</h4>
 <ul>
+<li>{e(t(lang, "運営: ", "Operated by "))}<a href="{e(OPERATOR_URL)}" rel="noopener">{e(OPERATOR_NAME)}</a></li>
 <li><a href="{e(GITHUB_ORG)}" rel="noopener">GitHub</a></li>
 <li><a href="/{lang}/privacy.html">{e(t(lang, "プライバシー・方法論", "Privacy & methodology"))}</a></li>
 <li><a href="/{lang}/pricing.html">{e(t(lang, "料金（準備中）", "Pricing (coming soon)"))}</a></li>
@@ -1178,12 +1181,12 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
         "Deltakura — an open-methodology archive of Japanese public-data histories",
     )
     desc_ja = (
-        "匿名運営・方法論公開の公開データアーカイブ。国の落札実績統計（FY2013–FY2026）と"
+        "方法論を公開した公開データアーカイブ。国の落札実績統計（FY2013–FY2026）と"
         "国税庁 法人番号の日次差分を、出典とライセンスを明記して蓄積しています。"
         "メールアドレスは一切集めません。更新は RSS / JSON / MCP で配信します。"
     )
     desc_en = (
-        "An anonymous-by-design, open-methodology archive of Japanese public-data histories: "
+        "An open-methodology archive of Japanese public-data histories: "
         "national tender-award statistics (FY2013-FY2026) and the daily corporate-number registry "
         "diff, each carrying its source and licence. No email is ever collected; updates ship as "
         "RSS, JSON and MCP."
@@ -1333,14 +1336,14 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
 
     channels = t(
         lang,
-        f"""<p>更新のお知らせに<strong>メールアドレスは使いません</strong>。特定電子メール法は広告メールに送信者の実名と住所の表示を求めますが、この事業は運営者の身元を公開しない設計なので、メールという手段自体を持ちません。代わりに次の経路があります。</p>
+        f"""<p>更新のお知らせに<strong>メールアドレスは使いません</strong>。メールアドレスをお預かりしない方針のため、メールでの配信は行っていません。代わりに次の経路があります。</p>
 <ul class="clean">
 <li><a href="/feeds/nta-diff.xml">RSS フィード</a> — 法人番号 差分の週次サマリ。リーダーに登録するだけです。</li>
 <li><a href="/data/">JSON エンドポイント</a> — 各統計ページに対応する機械可読ファイル。</li>
 <li>MCP サーバー / npm パッケージ — 公開後、<a href="{GITHUB_ORG}" rel="noopener">GitHub</a> から辿れます（準備中）。</li>
 <li>各製品の「更新を受け取る」ボタン — クリック数だけを記録します。連絡先は取得しません。</li>
 </ul>""",
-        f"""<p>We do not use email for updates, ever. Japan's 特定電子メール法 requires a real sender name and postal address on advertising email, and this project does not publish an operator identity — so the channel simply does not exist here. Instead:</p>
+        f"""<p>We do not use email for updates, ever: we never collect email addresses, so the channel does not exist here. Instead:</p>
 <ul class="clean">
 <li><a href="/feeds/nta-diff.xml">RSS feed</a> — weekly summary of the registry diff. Point a reader at it.</li>
 <li><a href="/data/">JSON endpoints</a> — a machine-readable file behind every statistics page.</li>
@@ -1367,8 +1370,8 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
 {channels}
 
 <h2>{e(t(lang, "誰が運営しているのか", "Who runs this"))}</h2>
-<p>{e(t(lang, "Deltakura（デルタ蔵）というブランド名で運営している小規模なデータプロジェクトです。運営者個人の情報は公開していません。その代わり、検証できるものを全部公開しています。収集コード、正規化済みデータ、このサイトの生成スクリプト、匿名化ルール、出典とライセンス。判断材料は身元ではなく、方法だと考えています。", "Deltakura is a small independent data project. We do not publish personal details about the operator. What we publish instead is everything you would need to check the work: the collector code, the normalised data, the script that generates this site, the anonymisation rules, and the source and licence of every number. The method is the thing to judge, not the identity."))}</p>
-<p><a href="{e(GITHUB_ORG)}" rel="noopener">{e(t(lang, "GitHub でコードとデータを見る", "See the code and data on GitHub"))}</a> · <a href="/{lang}/privacy.html">{e(t(lang, "プライバシーと方法論", "Privacy and methodology"))}</a> · <a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(t(lang, "連絡先は GitHub Issues のみ", "Contact: GitHub Issues only"))}</a></p>
+<p>{e(t(lang, "Deltakura（デルタ蔵）は Sirevo が運営するデータプロジェクトです。検証できるものは全部公開しています。収集コード、正規化済みデータ、このサイトの生成スクリプト、匿名化ルール、出典とライセンス。", "Deltakura is a data project operated by Sirevo. We publish everything you would need to check the work: the collector code, the normalised data, the script that generates this site, the anonymisation rules, and the source and licence of every number."))}</p>
+<p><a href="{e(OPERATOR_URL)}" rel="noopener">{e(t(lang, "運営: Sirevo", "Operator: Sirevo"))}</a> · <a href="{e(GITHUB_ORG)}" rel="noopener">{e(t(lang, "GitHub でコードとデータを見る", "See the code and data on GitHub"))}</a> · <a href="/{lang}/privacy.html">{e(t(lang, "プライバシーと方法論", "Privacy and methodology"))}</a> · <a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(t(lang, "連絡先は GitHub Issues のみ", "Contact: GitHub Issues only"))}</a></p>
 
 {attribution_block(lang, source_notices(lang))}
 """
@@ -1384,12 +1387,12 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
             "description": desc_ja if lang == "ja" else desc_en,
             "publisher": {
                 "@type": "Organization",
-                "name": BRAND,
-                "url": GITHUB_ORG,
+                "name": OPERATOR_NAME,
+                "url": OPERATOR_URL,
                 "description": t(
                     lang,
-                    "日本の公開データの履歴を、方法論を公開したまま匿名で運営するアーカイブ。",
-                    "An anonymous-by-design, open-methodology archive of Japanese public-data histories.",
+                    "日本の公開データの履歴を、方法論を公開したまま蓄積するアーカイブ Deltakura の運営者。",
+                    "Operator of Deltakura, an open-methodology archive of Japanese public-data histories.",
                 ),
             },
         }
@@ -2340,7 +2343,7 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
 <li><strong>入力欄がありません</strong>: このサイトにフォームは1つもありません。メールアドレス、氏名、会社名、いずれも受け取る手段がありません。</li>
 </ul>
 <h3>メールを使わない理由</h3>
-<p>特定電子メール法は広告メールに送信者の実名と住所の表示を義務づけ、GDPR 第13条は EU の購読者に対して管理者の明示を求めます。この事業は運営者の身元を公開しない設計なので、そのどちらも満たせません。だから<strong>メールという手段を最初から持たない</strong>ことにしました。ニュースレターも、1回限りのお知らせも、営業メールも送りません。購入が始まった後の領収書は、販売者である Merchant of Record が送ります。</p>"""
+<p>個人の連絡先をお預かりしないことを優先し、<strong>メールという手段を最初から持たない</strong>ことにしました。ニュースレターも、1回限りのお知らせも、営業メールも送りません。購入が始まった後の領収書は、販売者である Merchant of Record が送ります。</p>"""
 
     analytics_en = f"""<h3>Measurement</h3>
 <p>No cookies are set. There is no login and no account, and nothing here follows you to another site.</p>
@@ -2351,7 +2354,7 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
 <li><strong>There is no input field.</strong> This site has no form at all — no way to submit an email address, a name or a company.</li>
 </ul>
 <h3>Why there is no email</h3>
-<p>Japan's 特定電子メール法 requires a real sender name and postal address on advertising email, and GDPR Art. 13 requires a named controller for EU subscribers. A project that does not publish an operator identity cannot satisfy either. So the channel does not exist here: no newsletter, no one-off announcement, no outbound sales mail. Once purchases open, receipts come from the merchant of record, which is the seller.</p>"""
+<p>We chose not to hold anyone's contact details, so the channel does not exist here: no newsletter, no one-off announcement, no outbound sales mail. Once purchases open, receipts come from the merchant of record, which is the seller.</p>"""
 
     method_ja = """<h3>匿名化</h3>
 <p>取り込みの時点で、次のルールを機械的に適用します。人が判断する余地はありません。</p>
@@ -2433,7 +2436,7 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at):
 
 <h2>{e(t(lang, "連絡先", "Contact"))}</h2>
 <p>{e(t(lang, "連絡手段は GitHub Issues のみです。", "GitHub Issues is the only channel."))} <a href="{e(GITHUB_ISSUES)}" rel="noopener">{e(GITHUB_ISSUES)}</a></p>
-<p class="small muted">{e(t(lang, "運営者個人の氏名・住所・連絡先は公開していません。決済が始まった際の販売者は海外の Merchant of Record です。このページの内容は法的助言ではありません。", "We do not publish the operator's name, address or personal contact details. When payments open, the seller of record is a foreign merchant of record. Nothing on this page is legal advice."))}</p>
+<p class="small muted">{e(t(lang, "運営: Sirevo（https://sirevo.jp/）。決済が始まった際の販売者は海外の Merchant of Record です。このページの内容は法的助言ではありません。", "Operated by Sirevo (https://sirevo.jp/). When payments open, the seller of record is a foreign merchant of record. Nothing on this page is legal advice."))}</p>
 <p class="small faint">{e(t(lang, "最終更新: ", "Last updated: "))}{e(built_at[:10])}{e(t(lang, "（UTC。このページは毎回のビルドで生成されるため、日付はビルド日です。公開データの取得日は上の表と各統計ページに記載しています。）", " UTC (this page is regenerated by every build, so the date is the build date; the retrieval dates of the source data are in the table above and on the statistics pages)"))}</p>
 """
 
@@ -2452,7 +2455,7 @@ def build_root(bet_a_pages, bet_c, built_at):
     n = len(bet_a_pages)
     body = f"""
 <h1>Deltakura <span class="faint">デルタ蔵</span></h1>
-<p class="lede">An anonymous-by-design, open-methodology archive of Japanese public-data histories.<br>
+<p class="lede">An open-methodology archive of Japanese public-data histories.<br>
 日本の公開データの履歴を、方法論を公開したまま蓄積するアーカイブです。</p>
 <div class="grid c2">
 <div class="card">
@@ -2468,15 +2471,15 @@ def build_root(bet_a_pages, bet_c, built_at):
 <p><a href="/en/">Go to the English site →</a></p>
 </div>
 </div>
-<p class="small muted"><a href="/feeds/nta-diff.xml">RSS</a> · <a href="/data/">JSON</a> · <a href="{e(GITHUB_ORG)}" rel="noopener">GitHub</a></p>
+<p class="small muted"><a href="/feeds/nta-diff.xml">RSS</a> · <a href="/data/">JSON</a> · <a href="{e(GITHUB_ORG)}" rel="noopener">GitHub</a> · 運営 / Operated by <a href="{e(OPERATOR_URL)}" rel="noopener">{e(OPERATOR_NAME)}</a></p>
 {attribution_block("ja", source_notices("ja"))}
 """
     return render_page(
         lang="ja",
         path="/",
         title="Deltakura / デルタ蔵 — Japanese public-data histories",
-        desc_ja="日本の公開データの履歴を、方法論を公開したまま蓄積する匿名運営のアーカイブ。落札実績統計と法人番号 差分。",
-        desc_en="An anonymous-by-design, open-methodology archive of Japanese public-data histories: tender award statistics and the corporate registry diff.",
+        desc_ja="日本の公開データの履歴を、方法論を公開したまま蓄積するアーカイブ。落札実績統計と法人番号 差分。",
+        desc_en="An open-methodology archive of Japanese public-data histories: tender award statistics and the corporate registry diff.",
         body=body,
         alt_path="/en/",
     )
@@ -2588,8 +2591,8 @@ Sitemap: {BASE_URL}/sitemap.xml
 def build_llms_txt(bet_a_pages, bet_a_prov, bet_c, built_at):
     return f"""# Deltakura ({BRAND_JA})
 
-> An anonymous-by-design, open-methodology archive of Japanese public-data
-> histories. Unofficial. Every number carries its source, its licence and its
+> An open-methodology archive of Japanese public-data histories, operated by
+> Sirevo (https://sirevo.jp/). Unofficial. Every number carries its source, its licence and its
 > retrieval date. Derived aggregates are CC BY 4.0; please keep the attribution
 > string, the licence name and the modification notice together when you quote
 > them.
