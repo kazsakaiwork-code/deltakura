@@ -345,6 +345,8 @@ footer.site a:hover{color:var(--sumi)}
 .prose .tablewrap{margin:0 0 24px}
 .prose td.c,.prose th.c{text-align:center}
 .prose figure.chart,.prose .strip,.prose .chart{margin:8px 0 32px}
+/* the load reveal belongs to the home hero; in an article the strip is simply there */
+.prose .st-kura svg,.prose .stamp{animation:none}
 .prose .chart .tablewrap{margin:0}
 .prose figure.chart details{margin-top:12px}
 .fig-src{display:block; margin-top:2px; font-size:13px; color:var(--namako)}

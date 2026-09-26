@@ -320,6 +320,50 @@ def box_plot(lang, vmin, q1, med, q3, vmax, *, estimated=False, uid="bx"):
 # --------------------------------------------------------------------------
 
 
+def _month_ticks(days, slot, height, label_pct=15.0):
+    """x-axis labels: the first and last day, plus the first day of each month.
+
+    A month label that would overlap a neighbour is dropped (the first and last
+    day always stay: they are the period). `label_pct` is a label's width as a
+    share of the plot at a 360 px screen, where "07-24" is about 15% wide.
+    """
+    n = len(days)
+    ticks = []  # (index, anchor, x%)
+    seen = set()
+    for i, d in enumerate(days):
+        if d[:7] in seen and i != n - 1:
+            continue
+        seen.add(d[:7])
+        if i == n - 1:
+            ticks.append((i, "end", 100.0))
+        elif i == 0:
+            ticks.append((i, "start", 0.0))
+        else:
+            ticks.append((i, "middle", i * slot + slot / 2))
+
+    def extent(anchor, x):
+        if anchor == "start":
+            return x, x + label_pct
+        if anchor == "end":
+            return x - label_pct, x
+        return x - label_pct / 2, x + label_pct / 2
+
+    last = ticks[-1] if n > 1 else None
+    kept = []
+    for t in ticks:
+        lo, hi = extent(t[1], t[2])
+        if t is not last and t[0] != 0:
+            if kept and lo < extent(kept[-1][1], kept[-1][2])[1]:
+                continue
+            if last and hi > extent(last[1], last[2])[0]:
+                continue
+        kept.append(t)
+    return [
+        f'<text class="dc-xl" x="{_f(x)}%" y="{height - 6}" text-anchor="{a}">{_e(days[i][5:])}</text>'
+        for i, a, x in kept
+    ]
+
+
 def daily_chart(lang, days, values, height=180):
     n = len(days)
     if not n:
@@ -355,20 +399,7 @@ def daily_chart(lang, days, values, height=180):
             f"<title>{_e(label)}</title></rect>"
         )
 
-    xl = []
-    seen = set()
-    for i, d in enumerate(days):
-        m = d[:7]
-        if m in seen and i != n - 1:
-            continue
-        seen.add(m)
-        if i == n - 1:
-            a, xx = "end", 100.0
-        elif i == 0:
-            a, xx = "start", 0.0
-        else:
-            a, xx = "middle", i * slot + slot / 2
-        xl.append(f'<text class="dc-xl" x="{_f(xx)}%" y="{height - 6}" text-anchor="{a}">{_e(d[5:])}</text>')
+    xl = _month_ticks(days, slot, height)
 
     title = _t(
         lang,
@@ -517,14 +548,7 @@ def stacked_daily(lang, days, series, *, uid="sd", height=220, mean=None):
             f'<text class="sd-ml" x="100%" y="{_f(my - 5)}" text-anchor="end">'
             f'{_e(_t(lang, f"平均 {mean:,.0f}件", f"mean {mean:,.0f}"))}</text>'
         )
-    xl, seen = [], set()
-    for i, d in enumerate(days):
-        m = d[:7]
-        if m in seen and i != n - 1:
-            continue
-        seen.add(m)
-        a, xx = ("end", 100.0) if i == n - 1 else (("start", 0.0) if i == 0 else ("middle", i * slot + slot / 2))
-        xl.append(f'<text class="dc-xl" x="{_f(xx)}%" y="{height - 6}" text-anchor="{a}">{_e(d[5:])}</text>')
+    xl = _month_ticks(days, slot, height)
 
     title = _t(lang, f"{days[0]}〜{days[-1]} の公表日ごとの件数（処理区分別）",
                f"Records per publication day by change type, {days[0]} to {days[-1]}")

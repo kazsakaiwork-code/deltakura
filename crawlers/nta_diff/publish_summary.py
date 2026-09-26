@@ -28,6 +28,12 @@ file and not the archive. A day carried forward keeps whatever basis it was
 first computed with; a full rebuild on a machine holding the whole normalized
 store is the way to revise history.
 
+Every day carries its own `process_codes`, `kind_codes` and `prefectures`, and
+the three top-level totals are the sums over the day table. (Until 2026-09-27
+kind and prefecture totals were kept only as totals, and a nightly run on a
+one-night store replaced the archive's totals with that night's: 89,724
+prefecture rows became 2,101. Per-day breakdowns make a partial run additive.)
+
 **Two published files, both committed.**
 
     data/published/nta/summary.json   counts, code breakdowns, provenance
@@ -112,8 +118,8 @@ def _scan_normalized(normalized_dir: Path):
     daily = collections.Counter()
     daily_process = collections.defaultdict(collections.Counter)
     process = collections.Counter()
-    kinds = collections.Counter()
-    prefectures = collections.Counter()
+    daily_kinds = collections.defaultdict(collections.Counter)
+    daily_prefs = collections.defaultdict(collections.Counter)
     for path in sorted(normalized_dir.glob("*.csv.gz")):
         with gzip.open(path, "rt", encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
@@ -123,10 +129,10 @@ def _scan_normalized(normalized_dir: Path):
                 daily[day] += 1
                 daily_process[day][row.get("process_code") or "unknown"] += 1
                 process[row.get("process_code") or "unknown"] += 1
-                kinds[row.get("kind_code") or "unknown"] += 1
+                daily_kinds[day][row.get("kind_code") or "unknown"] += 1
                 if row.get("prefecture"):
-                    prefectures[row["prefecture"]] += 1
-    return daily, daily_process, process, kinds, prefectures
+                    daily_prefs[day][row["prefecture"]] += 1
+    return daily, daily_process, process, daily_kinds, daily_prefs
 
 
 def _read_manifest(manifest_path: Path) -> Dict[str, dict]:
@@ -153,9 +159,10 @@ def _int(value, default=0) -> int:
 def build(data_dir: Path, previous: Optional[dict] = None) -> dict:
     nta_root = data_dir / "nta"
     manifest = _read_manifest(nta_root / "manifest.csv")
-    daily, daily_process, process, kinds, prefectures = _scan_normalized(
+    daily, daily_process, process, daily_kinds, daily_prefs = _scan_normalized(
         nta_root / "normalized"
     )
+    previous_days = set(((previous or {}).get("days") or {}))
 
     days: Dict[str, dict] = {}
     for day, entry in ((previous or {}).get("days") or {}).items():
@@ -178,6 +185,8 @@ def build(data_dir: Path, previous: Optional[dict] = None) -> dict:
             entry["records"] = daily[day]
             entry["basis"] = "deduplicated-scan"
             entry["process_codes"] = dict(sorted(daily_process[day].items()))
+            entry["kind_codes"] = dict(sorted(daily_kinds[day].items()))
+            entry["prefectures"] = dict(sorted(daily_prefs[day].items()))
         elif "records" not in entry:
             # No normalized rows for this day and nothing carried forward: the
             # manifest count is all there is. Say so rather than pass it off as
@@ -185,6 +194,8 @@ def build(data_dir: Path, previous: Optional[dict] = None) -> dict:
             entry["records"] = entry.get("records_raw", 0)
             entry["basis"] = "manifest-only"
             entry.setdefault("process_codes", {})
+            entry.setdefault("kind_codes", {})
+            entry.setdefault("prefectures", {})
         days[day] = entry
 
     ordered = {day: days[day] for day in sorted(days)}
@@ -202,12 +213,27 @@ def build(data_dir: Path, previous: Optional[dict] = None) -> dict:
         for code, n in (entry.get("process_codes") or {}).items():
             merged_process[code] += _int(n)
 
-    prev_kinds = collections.Counter({k: _int(v) for k, v in ((previous or {}).get("kind_codes") or {}).items()})
-    prev_pref = collections.Counter({k: _int(v) for k, v in ((previous or {}).get("prefectures") or {}).items()})
-    # kind and prefecture totals are only recomputable from the record store, so
-    # a partial run keeps the previous totals rather than shrinking them.
-    kind_totals = kinds if kinds else prev_kinds
-    pref_totals = prefectures if prefectures else prev_pref
+    def summed(field):
+        total = collections.Counter()
+        for entry in ordered.values():
+            for key, n in (entry.get(field) or {}).items():
+                total[key] += _int(n)
+        return total
+
+    if all("kind_codes" in e and "prefectures" in e for e in ordered.values()):
+        # Every day carries its breakdown: the totals are the sums, whatever
+        # part of the archive this run could scan.
+        kind_totals = summed("kind_codes")
+        pref_totals = summed("prefectures")
+    else:
+        # A summary written before per-day breakdowns existed: its totals cover
+        # the days it already held; add only the days this run saw first.
+        kind_totals = collections.Counter({k: _int(v) for k, v in ((previous or {}).get("kind_codes") or {}).items()})
+        pref_totals = collections.Counter({k: _int(v) for k, v in ((previous or {}).get("prefectures") or {}).items()})
+        for day in daily:
+            if day not in previous_days:
+                kind_totals.update(daily_kinds[day])
+                pref_totals.update(daily_prefs[day])
 
     return {
         "schema": SCHEMA,
@@ -330,8 +356,9 @@ def run(argv: Optional[List[str]] = None) -> int:
         return 0
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(text, encoding="utf-8")
-    manifest_path.write_text(manifest_text, encoding="utf-8")
+    # LF on every platform: these bytes are committed and compared in CI.
+    out_path.write_text(text, encoding="utf-8", newline="\n")
+    manifest_path.write_text(manifest_text, encoding="utf-8", newline="\n")
     cov = summary["coverage"]
     print(f"[nta-summary] {paths.rel(out_path)}: {cov['days_with_data']} day(s), "
           f"{cov['records']:,} records (deduplicated; publisher rows "

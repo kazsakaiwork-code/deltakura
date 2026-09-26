@@ -126,15 +126,19 @@ from `data/published/`, built by `article_charts()` in `build.py`:
 | Placeholder | Figure |
 |---|---|
 | `{{chart:nta-strip}}`, `{{chart:nta-strip:<oldest-listed>:<checked-on>}}` (alias `nta-40day-strip`) | the 40-day strip; the optional dates mark kept days the publisher no longer lists |
-| `{{chart:nta-daily}}` | records per publication day |
-| `{{chart:nta-daily-by-process}}` | the same, stacked by 処理区分, with the daily mean |
-| `{{chart:nta-prefecture-top10}}` | top 10 prefectures, full table in `<details>` |
+| `{{chart:nta-daily}}`, `{{chart:nta-daily:<from>:<to>}}` | records per publication day |
+| `{{chart:nta-daily-by-process}}`, `…:<from>:<to>` | the same, stacked by 処理区分, with the period's daily mean |
+| `{{chart:nta-prefecture-top10}}`, `…:<from>:<to>` | top 10 prefectures over the period (from the per-day counts in `summary.json`), full table in `<details>` |
 | `{{chart:bet-a-heatmap}}`, `{{chart:bet-a-heatmap:<fy>:<fy>}}`, `{{chart:awards-sector-fy-heatmap}}` (FY2014-FY2025) | year x ministry heatmap, rows by total |
 | `{{chart:bet-a-years}}`, `{{chart:bet-a-years:<sector-slug>}}` | awards per fiscal year |
 | `{{chart:bet-a-sectors}}`, `{{chart:bet-a-sectors:<fy>}}` | awards by sector |
 | `{{chart:bet-a-median}}`, `{{chart:bet-a-median:<fy>}}` | median award price by sector |
 | `{{chart:bet-a-prefs}}`, `{{chart:bet-a-prefs:<fy>}}` | awards by winner prefecture, top 10 |
 | `{{chart:bet-a-box:<sector-slug>:<fy>}}` | one page's box plot |
+
+Without `<from>:<to>` an NTA chart covers every day held; with it, only the
+publication days in that range, so an article's figures can match its text.
+`site/tests/test_charts.py` checks the charts against `summary.json`.
 
 A chart the published data cannot draw (today: `award-month-share`, which needs
 award counts by month) fails the build with the reason instead of being drawn

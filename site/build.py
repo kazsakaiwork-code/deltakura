@@ -624,6 +624,12 @@ def load_bet_c():
     daily = {d: int(days_map[d].get("records") or 0) for d in days}
     daily_raw = {d: int(days_map[d].get("records_raw") or 0) for d in days}
     daily_process = {d: dict(days_map[d].get("process_codes") or {}) for d in days}
+    # Per-day prefecture counts (summary.json carries them since 2026-09-27);
+    # None for a day that has none, so a period chart can refuse to guess.
+    daily_prefs = {
+        d: (dict(days_map[d]["prefectures"]) if isinstance(days_map[d].get("prefectures"), dict) else None)
+        for d in days
+    }
     coverage = summary.get("coverage") or {}
 
     return {
@@ -631,6 +637,7 @@ def load_bet_c():
         "daily": daily,
         "daily_raw": daily_raw,
         "daily_process": daily_process,
+        "daily_prefs": daily_prefs,
         "process": dict(sorted((summary.get("process_codes") or {}).items())),
         "kinds": dict(sorted((summary.get("kind_codes") or {}).items())),
         "prefectures": collections.Counter(summary.get("prefectures") or {}),
@@ -2134,7 +2141,7 @@ ARTICLE_INTENT = {
 #: What an article may embed with {{chart:<id>}}, for the error message.
 ARTICLE_CHART_IDS = (
     "nta-strip[:<oldest-listed-upstream>[:<checked-on>]]", "nta-40day-strip (= nta-strip)",
-    "nta-daily", "nta-daily-by-process", "nta-prefecture-top10",
+    "nta-daily[:<from>:<to>]", "nta-daily-by-process[:<from>:<to>]", "nta-prefecture-top10[:<from>:<to>]",
     "bet-a-heatmap[:<fy-from>:<fy-to>]", "awards-sector-fy-heatmap (FY2014-FY2025)",
     "bet-a-years[:<sector>]", "bet-a-sectors[:<fy>]", "bet-a-median[:<fy>]",
     "bet-a-prefs[:<fy>]", "bet-a-box:<sector>:<fy>",
@@ -2194,6 +2201,20 @@ def article_charts(bet_a_pages, bet_c):
                 f'<span class="fig-src">{e(src_line(kind))}</span></figcaption>{extra}</figure>'
             )
 
+        def period(args):
+            """Publication days in [from, to] (ISO dates), or every day held."""
+            if not args:
+                return list(bet_c["days"])
+            if len(args) != 2 or not all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", a) for a in args):
+                raise ArticleError("a period is two ISO dates: <from>:<to>")
+            lo, hi = args
+            if lo > hi:
+                raise ArticleError(f"period {lo} is after {hi}")
+            days = [d for d in bet_c["days"] if lo <= d <= hi]
+            if not days:
+                raise ArticleError(f"no publication day held between {lo} and {hi}")
+            return days
+
         def fy_label(fy):
             return t(lang, f"{fy}年度", f"FY{fy}") if fy else t(lang, f"FY{fy_min}–FY{fy_max}", f"FY{fy_min}-FY{fy_max}")
 
@@ -2221,8 +2242,8 @@ def article_charts(bet_a_pages, bet_c):
                 )
 
             if cid == "nta-daily-by-process":
-                nargs(0, 0)
-                days = bet_c["days"]
+                nargs(0, 2)
+                days = period(args)
                 main_codes = ("01", "12", "21", "11", "71")
                 classes = ("a", "b", "c", "d", "e")
                 series = []
@@ -2233,7 +2254,7 @@ def article_charts(bet_a_pages, bet_c):
                 series.append(("f", t(lang, "その他", "Other"), {
                     d: sum(v for c, v in bet_c["daily_process"][d].items() if c not in main_codes) for d in days
                 }))
-                mean = bet_c["total"] / len(days) if days else 0
+                mean = sum(bet_c["daily"][d] for d in days) / len(days)
                 svg, legend = charts.stacked_daily(lang, days, series, uid=uid, mean=mean)
                 return figure(
                     svg,
@@ -2244,8 +2265,18 @@ def article_charts(bet_a_pages, bet_c):
                 )
 
             if cid == "nta-prefecture-top10":
-                nargs(0, 0)
-                prefs = bet_c["prefectures"]
+                nargs(0, 2)
+                days = period(args)
+                missing = [d for d in days if bet_c["daily_prefs"][d] is None]
+                if missing:
+                    raise ArticleError(
+                        f"summary.json has no per-day prefecture counts for {missing[0]} "
+                        f"(and {len(missing) - 1} more); rebuild it with crawlers/nta_diff/publish_summary.py"
+                    )
+                prefs = collections.Counter()
+                for d in days:
+                    prefs.update(bet_c["daily_prefs"][d])
+                records = sum(bet_c["daily"][d] for d in days)
                 en_of = {ja: PREF_EN[f"{i + 1:02d}"] for i, ja in enumerate(PREF_JA)}
 
                 def pname(name):
@@ -2254,20 +2285,20 @@ def article_charts(bet_a_pages, bet_c):
                 ranked = prefs.most_common()
                 full = table(
                     "", [t(lang, "都道府県", "Prefecture"), t(lang, "件数", "Records"), t(lang, "構成比", "Share")],
-                    [[e(pname(k)), num(v), pct(v / bet_c["total"])] for k, v in ranked], ["", "n", "n"],
+                    [[e(pname(k)), num(v), pct(v / records)] for k, v in ranked], ["", "n", "n"],
                 )
                 return figure(
-                    charts.hbars([(e(pname(k)), v) for k, v in ranked[:10]], total=bet_c["total"]),
-                    t(lang, f"都道府県別の件数、上位10。{bet_c['first_day']}〜{bet_c['last_day']}、{bet_c['n_files']}公表日。構成比は全{bet_c['total']:,}件に対して。",
-                      f"Records by prefecture, top 10, {bet_c['first_day']} to {bet_c['last_day']} ({bet_c['n_files']} publication days). Shares are of all {bet_c['total']:,} records."),
+                    charts.hbars([(e(pname(k)), v) for k, v in ranked[:10]], total=records),
+                    t(lang, f"都道府県別の件数、上位10。{days[0]}〜{days[-1]}、{len(days)}公表日。構成比は全{records:,}件に対して。",
+                      f"Records by prefecture, top 10, {days[0]} to {days[-1]} ({len(days)} publication days). Shares are of all {records:,} records."),
                     "nta",
                     labels([t(lang, "都道府県 = 各レコードの本店所在地", "Prefecture = the record's registered head office")])
                     + f'<details><summary>{e(t(lang, f"{len(ranked)}都道府県の表", f"All {len(ranked)} prefectures"))}</summary>{full}</details>',
                 )
 
             if cid == "nta-daily":
-                nargs(0, 0)
-                days = bet_c["days"]
+                nargs(0, 2)
+                days = period(args)
                 vals = [bet_c["daily"][d] for d in days]
                 return figure(
                     charts.daily_chart(lang, days, vals),
@@ -2999,7 +3030,13 @@ def main(argv=None):
     built_at = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     if args.clean and OUT.exists():
-        shutil.rmtree(OUT)
+        # Empty the directory rather than remove it: a preview server or a shell
+        # sitting in site/public/ holds the directory itself open on Windows.
+        for child in OUT.iterdir():
+            if child.is_dir() and not child.is_symlink():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
     OUT.mkdir(parents=True, exist_ok=True)
 
     print("reading data/ ...")
