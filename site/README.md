@@ -39,13 +39,17 @@ cd site && firebase emulators:start --only hosting
 | `public/{ja,en}/bet-a/<sector>-fy<year>.html` | 338 | one page per 府省セクター × 年度 |
 | `public/{ja,en}/bet-c/index.html` | 2 | 法人番号 差分 archive: the 40-day strip, daily chart, breakdown bars, schema in `<details>` |
 | `public/{ja,en}/pricing.html` | 2 | one line: 有料プランはまだ開設していません。/ Paid plans are not open yet. |
-| `public/{ja,en}/privacy.html` | 2 | six promise tiles, then the facts (button, scripts, anonymisation, numbers, sources, collection, removals) in `<details>` |
+| `public/{ja,en}/privacy.html` | 2 | six promise tiles, then the facts (button, scripts, feed counting, anonymisation, numbers, sources, collection, removals) in `<details>` |
+| `public/{ja,en}/articles/index.html` | 2 | the article list; with none, one plain line (EN: "Articles are in Japanese only.") |
+| `public/{ja,en}/articles/<slug>.html` | 1 per article | an article from `site/content/articles/` (see **Articles**) |
+| `public/{ja,en}/subscribe.html` | 2 | RSS, JSON Feed, MCP and GitHub tiles, one line each, URLs as select-all slips |
 | `public/data/**.json` | 172 | a JSON endpoint per data page + two indexes + `site.json` |
 | `public/feeds/nta-diff.xml` | 1 | weekly RSS of daily registry-diff counts |
+| `public/feeds/articles.{xml,json}` | 2 | the articles as RSS 2.0 and JSON Feed 1.1 |
 | `public/{robots.txt,sitemap.xml,llms.txt,404.html}` | 4 | crawl, index and AI-search surface |
 | `public/assets/{style.css,intent.js,config.js}` | 3 | the only assets; nothing is loaded from a third party |
 
-350 pages, 530 files, ~9.6 MB. The build fails if any single page exceeds
+354 pages plus the articles, ~10.5 MB. The build fails if any single page exceeds
 100 KB (a Firebase Spark-plan constraint) or the whole tree exceeds 50 MB.
 
 ## Inputs
@@ -88,7 +92,77 @@ network.
 * any page exceeds 100 KB, or the tree exceeds 50 MB;
 * any page contains a `<form>`, an `input[type=email]`, a `mailto:` link or
   anything matching an email address — this project sends and collects no
-  email at all, and this is the mechanical guard on that rule.
+  email at all, and this is the mechanical guard on that rule;
+* an article page lacks `Article` JSON-LD, the attribution block (and its three
+  parts) or a notify button; an article file has malformed front matter, an
+  unknown chart id, an image, or a chart the published data cannot draw.
+
+## Articles
+
+One Markdown file per article in `site/content/articles/` (UTF-8). The format,
+the front-matter keys and the supported Markdown subset are documented at the
+top of `site/articles.py`; `python site/tests/test_articles.py` tests them.
+In short:
+
+```markdown
+---
+slug: ministry-award-counts          # a-z, 0-9, hyphens; the file name is free
+title: 省庁別に見る国の落札件数
+date: 2026-10-05                     # datePublished
+updated: 2026-10-06                  # optional dateModified
+description: 一文の要約（一覧・検索結果・フィード）
+lang: ja                             # ja or en
+product: bet_a                       # optional: bet_a (default) or bet_c
+draft: false                         # optional
+sources:
+  - 出典：調達ポータル（https://www.p-portal.go.jp/）
+---
+本文。{{chart:<id>}} は単独の行に。<!-- 編集メモは出力されない -->
+```
+
+Raw HTML is escaped, never passed through; images are refused. Charts come only
+from `data/published/`, built by `article_charts()` in `build.py`:
+
+| Placeholder | Figure |
+|---|---|
+| `{{chart:nta-strip}}`, `{{chart:nta-strip:<oldest-listed>:<checked-on>}}` (alias `nta-40day-strip`) | the 40-day strip; the optional dates mark kept days the publisher no longer lists |
+| `{{chart:nta-daily}}` | records per publication day |
+| `{{chart:nta-daily-by-process}}` | the same, stacked by 処理区分, with the daily mean |
+| `{{chart:nta-prefecture-top10}}` | top 10 prefectures, full table in `<details>` |
+| `{{chart:bet-a-heatmap}}`, `{{chart:bet-a-heatmap:<fy>:<fy>}}`, `{{chart:awards-sector-fy-heatmap}}` (FY2014-FY2025) | year x ministry heatmap, rows by total |
+| `{{chart:bet-a-years}}`, `{{chart:bet-a-years:<sector-slug>}}` | awards per fiscal year |
+| `{{chart:bet-a-sectors}}`, `{{chart:bet-a-sectors:<fy>}}` | awards by sector |
+| `{{chart:bet-a-median}}`, `{{chart:bet-a-median:<fy>}}` | median award price by sector |
+| `{{chart:bet-a-prefs}}`, `{{chart:bet-a-prefs:<fy>}}` | awards by winner prefecture, top 10 |
+| `{{chart:bet-a-box:<sector-slug>:<fy>}}` | one page's box plot |
+
+A chart the published data cannot draw (today: `award-month-share`, which needs
+award counts by month) fails the build with the reason instead of being drawn
+from anywhere else. Every article page carries the attribution block, `Article`
+JSON-LD, the notify button of its `product` (an allowlisted intent id, so the
+intent contract is unchanged) and the feed links. The home page shows the three
+newest articles of its language; with none the row is not rendered, and "記事"
+joins the navigation only in a language that has an article.
+
+`DELTAKURA_ARTICLES_DIR` points the build at another directory (a draft set or
+a test fixture).
+
+## Feeds
+
+Every feed link, `<link rel="alternate">` and feed self URL points at the
+Worker, which serves the feed and counts the fetch:
+
+| URL | What |
+|---|---|
+| `https://deltakura-api.deltakura.workers.dev/v0/feeds/articles.xml` | articles, RSS (relayed from `public/feeds/articles.xml`) |
+| `https://deltakura-api.deltakura.workers.dev/v0/feeds/articles.json` | articles, JSON Feed 1.1 (relayed) |
+| `https://deltakura-api.deltakura.workers.dev/v0/feeds/nta-diff.xml` | registry diff, weekly RSS (relayed) |
+| `https://deltakura-api.deltakura.workers.dev/v0/feeds/nta-diff.json` | registry diff, daily JSON Feed (generated by the Worker) |
+| `https://deltakura-api.deltakura.workers.dev/v0/feeds/stats` | daily fetch counts per feed |
+
+The static files stay on Hosting and are the copies the Worker relays, so an
+old subscription to `/feeds/nta-diff.xml` keeps working (it is just not
+counted). Counting rules: `api/README.md`, "Feed fetch counting".
 
 ## Design
 
@@ -190,10 +264,13 @@ files, and the CSP allows scripts from `self` only. If cookie-less analytics
 (Cloudflare Web Analytics) is ever added, the privacy page and the `firebase.json`
 CSP must be updated **in the same change that adds the script tag** — the page
 promises that, so the order is not optional. The same rule covers feed
-subscriber counts and the intent button. Feed subscribers are not counted. The
-intent button is live and counts one view and one click per client, product and
-UTC day at the Worker; the privacy page describes exactly that, including what is
-sent and what is stored.
+counts and the intent button. Feed fetches through the Worker are counted as
+daily totals per feed (salted hash of User-Agent and IP /16, kept at most 25
+hours, no IP stored), and the privacy page says so in one line. The intent
+button is live and counts one view and one click per client, product and UTC
+day at the Worker; the privacy page describes exactly that, including what is
+sent and what is stored. Feed links are navigation, not `fetch()`, so the CSP
+did not change for them.
 
 `/privacy.html` carries **`Last updated: <build date> UTC`**, and that is a
 deliberate choice, not a leftover. The date is the date of the build that

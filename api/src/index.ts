@@ -1,7 +1,8 @@
 /**
  * Deltakura v0 read API — a Cloudflare Worker.
  *
- * Read-only apart from /v0/intent, which increments an anonymous counter.
+ * Read-only apart from two anonymous counters: /v0/intent, and the feed fetch
+ * counter behind /v0/feeds/* (src/feedcount.ts).
  * Nothing here authenticates a user, stores a raw IP, sets a cookie, or returns
  * an individual's data.
  *
@@ -11,6 +12,8 @@
  *   GET  /v0/corporate/diff-summary
  *   GET  /v0/corporate/:number
  *   GET  /v0/feeds/nta-diff.json
+ *   GET  /v0/feeds/nta-diff.xml | articles.xml | articles.json
+ *   GET  /v0/feeds/stats
  *   POST /v0/intent
  *   GET  /v0/intent
  */
@@ -29,7 +32,8 @@ import {
 } from './http.js';
 import { handleProcurementStats } from './routes/procurement.js';
 import { handleCorporateLookup, handleDiffSummary } from './routes/corporate.js';
-import { handleNtaDiffFeed } from './routes/feeds.js';
+import { handleNtaDiffFeed, handleStaticFeed, STATIC_FEEDS, type StaticFeedId } from './routes/feeds.js';
+import { FEED_IDS, handleFeedStats } from './feedcount.js';
 import { handleIntentGet, handleIntentPost, products } from './routes/intent.js';
 import { bundledMeta, corporateStore, procurementStore } from './store/index.js';
 
@@ -54,6 +58,10 @@ const ROUTES = [
     params: ['from', 'to', 'group_by=change_kind', 'lang']
   },
   { method: 'GET', path: '/v0/feeds/nta-diff.json', description: 'JSON Feed of daily change volume', params: ['days'] },
+  { method: 'GET', path: '/v0/feeds/nta-diff.xml', description: 'weekly RSS of the registry diff' },
+  { method: 'GET', path: '/v0/feeds/articles.xml', description: 'RSS of the site articles' },
+  { method: 'GET', path: '/v0/feeds/articles.json', description: 'JSON Feed of the site articles' },
+  { method: 'GET', path: '/v0/feeds/stats', description: 'daily feed fetch counts (distinct fetchers per feed)', params: ['days'] },
   { method: 'POST', path: '/v0/intent', description: 'record a pay-intent click', params: ['body: {product, kind, client_id}'] },
   { method: 'GET', path: '/v0/intent', description: 'pay-intent counters', params: ['days'] }
 ];
@@ -95,7 +103,8 @@ async function health(env: Env): Promise<Response> {
       DB: Boolean(env.DB)
     },
     bundled: bundledMeta,
-    intent_products: products(env)
+    intent_products: products(env),
+    feeds: [...FEED_IDS]
   });
 }
 
@@ -144,7 +153,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext, path: st
 
   if (path === '/v0/procurement/stats') return handleProcurementStats(request, env);
   if (path === '/v0/corporate/diff-summary') return handleDiffSummary(request, env);
-  if (path === '/v0/feeds/nta-diff.json') return handleNtaDiffFeed(request, env);
+  if (path === '/v0/feeds/nta-diff.json') return handleNtaDiffFeed(request, env, ctx);
+  if (path === '/v0/feeds/stats') return handleFeedStats(request, env);
+  const feed = /^\/v0\/feeds\/([a-z-]+\.(?:xml|json))$/.exec(path)?.[1];
+  if (feed && Object.hasOwn(STATIC_FEEDS, feed)) return handleStaticFeed(request, env, ctx, feed as StaticFeedId);
 
   if (path === '/v0/intent') {
     if (request.method === 'POST') return handleIntentPost(request, env, ctx);

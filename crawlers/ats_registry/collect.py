@@ -57,7 +57,11 @@ JOBS_COLUMNS = [
     "is_japan",
     "japan_prefecture",
     "remote_flag",
-    "employment_type",
+    # `employment_type` was dropped on 2026-09-27 (task PC-5): it is derived from
+    # Lever `categories.commitment`, which is not on the source allow-list by
+    # name, so it is not stored until the Source Scout confirms that reading.
+    # write_jobs() writes exactly these columns, so the next run removes it from
+    # an existing jobs.csv as well.
     "job_url",
     "first_seen_at",
     "last_seen_at",
@@ -154,7 +158,8 @@ def observe_board(
     new = jp = 0
     for post in postings:
         pid = ats_mod.posting_id(name, token, post["job_id"])
-        is_jp, pref, remote, emp, func, norm = japan.classify(
+        # The derived employment type (4th value) is not stored; see JOBS_COLUMNS.
+        is_jp, pref, remote, _employment, func, norm = japan.classify(
             post["location"], post["title"], post["commitment"]
         )
         if is_jp:
@@ -179,7 +184,6 @@ def observe_board(
                 "is_japan": "Y" if is_jp else "N",
                 "japan_prefecture": pref,
                 "remote_flag": "Y" if remote else "N",
-                "employment_type": emp,
                 "job_url": post["url"],
                 "first_seen_at": now,
                 "last_seen_at": now,

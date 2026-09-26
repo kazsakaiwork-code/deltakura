@@ -95,9 +95,9 @@ def list_url(ats: str, token: str) -> str:
 #: The field allow-list, applied at parse time and fail-closed: `parse()` builds
 #: each posting from exactly these keys, picked by name, so an unrecognised field
 #: in the payload - including one a schema change adds tomorrow - is never
-#: carried. `commitment` and `team` are short structured category labels used
-#: only to derive a controlled-vocabulary employment type; they are not stored
-#: verbatim. Never stored, in any form: the description body or any other prose,
+#: carried. `commitment` and `team` are short structured category labels; they
+#: are not stored verbatim. `commitment` feeds only the derived remote flag (the
+#: derived employment type is not stored, pending the Source Scout, PC-5). Never stored, in any form: the description body or any other prose,
 #: recruiter / hiring-manager / contact names, emails or phone numbers,
 #: compensation text, candidate data.
 PAYLOAD_FIELDS = (

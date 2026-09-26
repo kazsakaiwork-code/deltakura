@@ -51,7 +51,8 @@ def wcls(value: float, vmax: float) -> str:
 # --------------------------------------------------------------------------
 
 
-def strip_figure(lang, days, daily, total, *, uid="strip", window=40, fade=5):
+def strip_figure(lang, days, daily, total, *, uid="strip", window=40, fade=5,
+                 oldest_upstream=None, checked_on=None):
     """Two aligned rows of day cells: the official source and the storehouse.
 
     Top row: the publisher keeps only the last `window` publication days.
@@ -59,6 +60,10 @@ def strip_figure(lang, days, daily, total, *, uid="strip", window=40, fade=5):
     `fade` cells still inside the window are drawn fading: they are the next
     to go. Bottom row: every day we have kept, height = that day's count,
     ending in the 保管済 stamp with the running total.
+
+    `oldest_upstream` (an ISO date an editor read off the publisher's listing,
+    on `checked_on`) overrides the window arithmetic: kept days before it are
+    drawn as gone. Without it, "gone" is derived from the archive alone.
     """
     n = len(days)
     if n == 0:
@@ -70,6 +75,8 @@ def strip_figure(lang, days, daily, total, *, uid="strip", window=40, fade=5):
     gap = slot * 0.24
     w = slot - gap
     start = max(0, n - window)  # first index still on the official site
+    if oldest_upstream:
+        start = next((i for i, d in enumerate(days) if d >= oldest_upstream), n)
     gone = start
 
     def cell(i, v, cls, title=None):
@@ -165,6 +172,12 @@ def strip_figure(lang, days, daily, total, *, uid="strip", window=40, fade=5):
         f"The official site keeps only the last {window} days; from day {window + 1} a file is gone. "
         "The storehouse keeps every day.",
     )
+    if oldest_upstream:
+        caption += _t(
+            lang,
+            f"公式サイトの一覧は {oldest_upstream} 分から" + (f"（{checked_on} 確認）。" if checked_on else "。"),
+            f" The official listing starts at {oldest_upstream}" + (f" (checked {checked_on})." if checked_on else "."),
+        )
 
     return f"""<figure class="strip" aria-labelledby="{uid}-cap">
 <div class="st-grid">
@@ -239,8 +252,11 @@ _DECADE_EN = ["¥1", "¥10", "¥100", "¥1k", "¥10k", "¥100k", "¥1M", "¥10M"
               "¥100M", "¥1B", "¥10B", "¥100B", "¥1T", "¥10T"]
 
 
-def box_plot(lang, vmin, q1, med, q3, vmax, *, estimated=False):
-    """Horizontal box plot of award prices, log10 scale, median labelled."""
+def box_plot(lang, vmin, q1, med, q3, vmax, *, estimated=False, uid="bx"):
+    """Horizontal box plot of award prices, log10 scale, median labelled.
+
+    `uid` keeps the <title>/<desc> ids unique when a page carries several.
+    """
     vals = [max(1, int(v or 1)) for v in (vmin, q1, med, q3, vmax)]
     lo = math.floor(math.log10(vals[0]))
     hi = math.ceil(math.log10(vals[4]))
@@ -292,8 +308,8 @@ def box_plot(lang, vmin, q1, med, q3, vmax, *, estimated=False):
         f"min ¥{vals[0]:,}, Q1 ¥{vals[1]:,}, median ¥{vals[2]:,}, Q3 ¥{vals[3]:,}, max ¥{vals[4]:,}",
     )
     return (
-        f'<svg class="bx" width="100%" height="{ty + 24}" role="img" aria-labelledby="bx-t bx-d">'
-        f'<title id="bx-t">{_e(title)}</title><desc id="bx-d">{_e(desc)}</desc>'
+        f'<svg class="bx" width="100%" height="{ty + 24}" role="img" aria-labelledby="{uid}-t {uid}-d">'
+        f'<title id="{uid}-t">{_e(title)}</title><desc id="{uid}-d">{_e(desc)}</desc>'
         + "".join(parts)
         + "</svg>"
     )
@@ -365,8 +381,11 @@ def daily_chart(lang, days, values, height=180):
     )
 
 
-def hbars(rows, *, total=None):
-    """HTML horizontal bars: [(label_html, value)] -> <ul>. Bar widths are classes."""
+def hbars(rows, *, total=None, fmt=None):
+    """HTML horizontal bars: [(label_html, value)] -> <ul>. Bar widths are classes.
+
+    `fmt` formats the value text (default: thousands separators).
+    """
     if not rows:
         return ""
     vmax = max(v for _, v in rows) or 1
@@ -379,6 +398,146 @@ def hbars(rows, *, total=None):
         items.append(
             f'<li><span class="hb-k">{label}</span>'
             f'<span class="hb-bar" aria-hidden="true"><span class="hb-fill {wcls(v, vmax)}"></span></span>'
-            f'<span class="hb-v">{v:,}{share}</span></li>'
+            f'<span class="hb-v">{_e(fmt(v)) if fmt else f"{v:,}"}{share}</span></li>'
         )
     return f'<ul class="hbars">{"".join(items)}</ul>'
+
+
+# --------------------------------------------------------------------------
+# Articles: one value per fiscal year
+# --------------------------------------------------------------------------
+
+
+def year_bars(lang, rows, *, unit_ja="件", unit_en=" awards", uid="yb", height=200):
+    """Vertical bars, one per fiscal year: rows = [(fiscal_year, value)].
+
+    Same construction as daily_chart (percentage x, pixel y, no viewBox), so it
+    fits any column width. Each bar carries its value as <title>, and the
+    caller prints the numbers as text as well.
+    """
+    n = len(rows)
+    if not n:
+        return ""
+    top_pad, bot_pad = 18, 24
+    plot_h = height - top_pad - bot_pad
+    vmax = max(v for _, v in rows) or 1
+    step = 10 ** (len(str(int(vmax))) - 1)
+    top = int((vmax // step + 1) * step)
+    slot = 100.0 / n
+    bw = slot * 0.62
+    base = top_pad + plot_h
+    unit = _t(lang, unit_ja, unit_en)
+    parts = []
+    for frac in (0.5, 1.0):
+        y = base - plot_h * frac
+        parts.append(f'<line class="dc-grid" x1="0" y1="{_f(y)}" x2="100%" y2="{_f(y)}"/>')
+    parts.append(
+        f'<text class="dc-yl" x="0" y="{_f(top_pad - 5)}">{top:,}{_e(unit)}'
+        f'<tspan class="dc-sub">{_e(_t(lang, "（点線は半分）", " (dotted line = half)"))}</tspan></text>'
+    )
+    parts.append(f'<line class="dc-base" x1="0" y1="{base}" x2="100%" y2="{base}"/>')
+    bars, labels = [], []
+    every = 1 if n <= 8 else 2
+    for i, (fy, v) in enumerate(rows):
+        h = plot_h * v / top
+        x = i * slot + (slot - bw) / 2
+        label = _t(lang, f"{fy}年度: {v:,}{unit_ja}", f"FY{fy}: {v:,}{unit_en}")
+        bars.append(
+            f'<rect class="dc-bar" x="{_f(x)}%" y="{_f(base - h)}" width="{_f(bw)}%" height="{_f(h)}" rx="1">'
+            f"<title>{_e(label)}</title></rect>"
+        )
+        if i % every == 0 or i == n - 1:
+            labels.append(
+                f'<text class="dc-xl" x="{_f(i * slot + slot / 2)}%" y="{height - 6}" text-anchor="middle">'
+                f"{_e(str(fy)[2:] if n > 8 else fy)}</text>"
+            )
+    first, last = rows[0][0], rows[-1][0]
+    title = _t(lang, f"{first}〜{last}年度の年度別の件数", f"Per fiscal year, FY{first} to FY{last}")
+    desc = "; ".join(_t(lang, f"{fy}年度 {v:,}", f"FY{fy} {v:,}") for fy, v in rows)
+    return (
+        f'<svg class="dc" width="100%" height="{height}" role="img" aria-labelledby="{uid}-t {uid}-d">'
+        f'<title id="{uid}-t">{_e(title)}</title><desc id="{uid}-d">{_e(desc)}</desc>'
+        + "".join(bars) + "".join(parts) + "".join(labels) + "</svg>"
+    )
+
+
+# --------------------------------------------------------------------------
+# Articles: records per publication day, stacked by change type
+# --------------------------------------------------------------------------
+
+
+def stacked_daily(lang, days, series, *, uid="sd", height=220, mean=None):
+    """Stacked bars, one per publication day.
+
+    series: [(class_suffix, label, {day: value})], bottom to top. Classes
+    sd-<suffix> colour the segments (theme.py); the legend and its totals are
+    returned as HTML so the numbers are also text.
+    """
+    n = len(days)
+    if not n or not series:
+        return "", ""
+    totals = [sum(s[2].get(d, 0) for s in series) for d in days]
+    vmax = max(totals) or 1
+    step = 10 ** (len(str(int(vmax))) - 1)
+    top = int((vmax // step + 1) * step)
+    top_pad, bot_pad = 18, 24
+    plot_h = height - top_pad - bot_pad
+    base = top_pad + plot_h
+    slot = 100.0 / n
+    bw = slot * 0.7
+    unit = _t(lang, "件", " records")
+
+    parts = []
+    for i, d in enumerate(days):
+        y = float(base)
+        x = i * slot + (slot - bw) / 2
+        for cls, label, values in series:
+            v = values.get(d, 0)
+            if not v:
+                continue
+            h = plot_h * v / top
+            y -= h
+            parts.append(
+                f'<rect class="sd-{cls}" x="{_f(x)}%" y="{_f(y)}" width="{_f(bw)}%" height="{_f(h)}">'
+                f"<title>{_e(f'{d} {label}: {v:,}')}</title></rect>"
+            )
+    grid = []
+    for frac in (0.5, 1.0):
+        gy = base - plot_h * frac
+        grid.append(f'<line class="dc-grid" x1="0" y1="{_f(gy)}" x2="100%" y2="{_f(gy)}"/>')
+    grid.append(
+        f'<text class="dc-yl" x="0" y="{_f(top_pad - 5)}">{top:,}{_e(unit)}'
+        f'<tspan class="dc-sub">{_e(_t(lang, "（点線は半分）", " (dotted line = half)"))}</tspan></text>'
+    )
+    grid.append(f'<line class="dc-base" x1="0" y1="{base}" x2="100%" y2="{base}"/>')
+    if mean:
+        my = base - plot_h * mean / top
+        grid.append(f'<line class="sd-mean" x1="0" y1="{_f(my)}" x2="100%" y2="{_f(my)}"/>')
+        grid.append(
+            f'<text class="sd-ml" x="100%" y="{_f(my - 5)}" text-anchor="end">'
+            f'{_e(_t(lang, f"平均 {mean:,.0f}件", f"mean {mean:,.0f}"))}</text>'
+        )
+    xl, seen = [], set()
+    for i, d in enumerate(days):
+        m = d[:7]
+        if m in seen and i != n - 1:
+            continue
+        seen.add(m)
+        a, xx = ("end", 100.0) if i == n - 1 else (("start", 0.0) if i == 0 else ("middle", i * slot + slot / 2))
+        xl.append(f'<text class="dc-xl" x="{_f(xx)}%" y="{height - 6}" text-anchor="{a}">{_e(d[5:])}</text>')
+
+    title = _t(lang, f"{days[0]}〜{days[-1]} の公表日ごとの件数（処理区分別）",
+               f"Records per publication day by change type, {days[0]} to {days[-1]}")
+    desc = "; ".join(f"{label}: {sum(values.values()):,}" for _, label, values in series)
+    svg = (
+        f'<svg class="dc" width="100%" height="{height}" role="img" aria-labelledby="{uid}-t {uid}-d">'
+        f'<title id="{uid}-t">{_e(title)}</title><desc id="{uid}-d">{_e(desc)}</desc>'
+        + "".join(parts) + "".join(grid) + "".join(xl) + "</svg>"
+    )
+    grand = sum(totals) or 1
+    legend = '<ul class="st-legend sd-legend">' + "".join(
+        f'<li><span class="sw sd-{cls}" aria-hidden="true"></span>{_e(label)} '
+        f'<span class="num">{sum(values.values()):,}（{100 * sum(values.values()) / grand:.1f}%）</span></li>'
+        for cls, label, values in reversed(series)
+    ) + "</ul>"
+    return svg, legend

@@ -1,7 +1,7 @@
 # Deltakura v0 read API
 
-A Cloudflare Worker over Japanese public open data. Read-only, except for one
-anonymous counter.
+A Cloudflare Worker over Japanese public open data. Read-only, except for two
+anonymous counters: pay intent (`/v0/intent`) and feed fetches (`/v0/feeds/*`).
 
 > **Status: live** at `https://deltakura-api.deltakura.workers.dev` (environment
 > `production`, dedicated Cloudflare account on Workers Free, deployed 2026-09-23).
@@ -18,7 +18,11 @@ anonymous counter.
 | `GET` | `/v0/procurement/stats` | national procurement award statistics |
 | `GET` | `/v0/corporate/{corporate_number}` | one 法人番号: name, address 都道府県, 法人種別, latest change |
 | `GET` | `/v0/corporate/diff-summary` | daily register-change counts over a range |
-| `GET` | `/v0/feeds/nta-diff.json` | JSON Feed 1.1 of daily change volume |
+| `GET` | `/v0/feeds/nta-diff.json` | JSON Feed 1.1 of daily change volume (counted) |
+| `GET` | `/v0/feeds/nta-diff.xml` | the site's weekly RSS, relayed (counted) |
+| `GET` | `/v0/feeds/articles.xml` | the site's article RSS, relayed (counted) |
+| `GET` | `/v0/feeds/articles.json` | the site's article JSON Feed, relayed (counted) |
+| `GET` | `/v0/feeds/stats` | daily fetch counts per feed |
 | `POST` | `/v0/intent` | record one pay-intent click |
 | `GET` | `/v0/intent` | the aggregate intent counters |
 
@@ -81,6 +85,40 @@ Why it can be slightly low: counters are flushed with a KV read-then-write, so t
 isolates flushing the same key in the same instant can lose one increment. At current
 traffic this is negligible, and it does not change the rule: read the number as an
 upper bound.
+
+## Feed fetch counting
+
+Every feed the site links to is served by this Worker, so a subscriber count
+exists without a beacon (`src/feedcount.ts`, `src/routes/feeds.ts`).
+
+- **Relay.** `nta-diff.xml`, `articles.xml` and `articles.json` are fetched from
+  the static site (`SITE_ORIGIN`, default `https://deltakura-signals.web.app`,
+  fixed paths only), memoised for 10 minutes per isolate, served with an `ETag`
+  (a matching `If-None-Match` gets `304`). If the site cannot be reached and
+  nothing is memoised, the answer is a `302` to the static file, so a reader
+  never gets an error and keeps the Worker URL. `nta-diff.json` is generated
+  here as before.
+- **What is counted.** Per feed and UTC day: `requests` (every GET),
+  `distinct_fetchers` (a salted SHA-256 of the normalised User-Agent plus the
+  address coarsened to /16 for IPv4 or /48 for IPv6; the salt is
+  `IP_HASH_SALT` plus the day), `crawler_fetchers` (known search and AI
+  crawlers, kept apart), and `reported_subscribers` (the "N subscribers" an
+  aggregator such as Feedly states in its User-Agent, as the day's maximum per
+  UA family token). HEAD, `/v0/feeds/stats` and unknown paths are not counted.
+- **What is stored.** In `KV_METRICS`: the de-duplication key
+  `feed:dedup:<day>:<feed>:<hash>` for 25 hours, and the daily counters
+  (`feed:count|crawl|req|rep:<feed>:<day>`) for 400 days. No raw IP address and
+  no User-Agent string is stored; `rep` holds only the family token and a number.
+  In production without `IP_HASH_SALT` the feed is still served and nothing is
+  counted.
+- **Write budget.** Counters are buffered in memory and flushed at most once a
+  minute per key; a new fetcher costs one write per feed and day, capped at 400
+  per isolate and day (beyond that, de-duplication is in memory only).
+- **Reading it.** `GET /v0/feeds/stats?days=14` (1-31) returns daily rows per
+  feed plus `readers_estimate` = distinct fetchers + the extra readers each
+  reporting aggregator states. Like the intent count, read it as an estimate:
+  one reader on two networks counts twice, many readers behind one aggregator
+  that reports nothing count once.
 
 ## Two data sources
 

@@ -26,10 +26,16 @@ export interface Env {
    * against a sample is not evidence of anything.
    */
   CORPORATE_RECORDS?: string;
+  /**
+   * Origin of the static site whose feeds this Worker relays (and counts) at
+   * /v0/feeds/nta-diff.xml, /v0/feeds/articles.xml and /v0/feeds/articles.json.
+   * Optional; must be an https origin. Defaults to https://deltakura-signals.web.app.
+   */
+  SITE_ORIGIN?: string;
 
   /** Intent counters (the pay-intent metric). */
   KV_INTENT?: KVNamespace;
-  /** Public metrics rollups. */
+  /** Public metrics rollups: the feed fetch counters (src/feedcount.ts). */
   KV_METRICS?: KVNamespace;
   /** Corporate-number change register in production. */
   DB?: D1Database;

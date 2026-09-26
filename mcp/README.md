@@ -17,8 +17,9 @@ any number taken from it. No tool here returns data about an individual.
 > affiliated with, endorsed by or connected to 国税庁, デジタル庁 or any other government body.**
 > Where a number here disagrees with the publisher, the publisher is right.
 
-> **Status: 0.1.0, not published.** This package is not on npm and the hosted API it can talk to is
-> not deployed. Both are pending operator approval. `npm pack` works; `npm publish` is not run.
+> **Status: 0.1.0, not published.** This package is not on npm yet; publishing is pending operator
+> approval. `npm pack` works; `npm publish` is not run. The hosted API it can talk to is live at
+> `https://deltakura-api.deltakura.workers.dev/v0`.
 
 ## Install
 
@@ -98,11 +99,11 @@ The two corporate-number tools need the change archive, which is far too large t
 | `DELTAKURA_DATA_DIR` | Mode | Behaviour |
 |---|---|---|
 | set | **local** | reads `<dir>/nta/normalized/*.csv.gz` and `<dir>/nta/manifest.csv` directly |
-| unset | **remote** | calls `https://api.deltakura.dev/v0/…` |
+| unset | **remote** | calls `https://deltakura-api.deltakura.workers.dev/v0/…` |
 
-The hosted API is **not deployed yet**, so remote mode returns a clear
-`remote not available yet` error naming the endpoint it would have called and telling you to set
-`DELTAKURA_DATA_DIR`. It makes no network request while `DELTAKURA_API_ENABLED` is unset.
+Remote calls are **opt-in**. While `DELTAKURA_API_ENABLED` is unset, remote mode makes no network
+request and returns a clear `remote not available` error naming the endpoint it would have called
+and the two ways to answer it (`DELTAKURA_API_ENABLED=1` or `DELTAKURA_DATA_DIR`).
 
 Either the data root or the `nta` directory itself is accepted as `DELTAKURA_DATA_DIR`.
 
@@ -111,7 +112,7 @@ Either the data root or the `nta` directory itself is accepted as `DELTAKURA_DAT
 | Variable | Default | Meaning |
 |---|---|---|
 | `DELTAKURA_DATA_DIR` | — | local Deltakura data directory; selects local mode |
-| `DELTAKURA_API_BASE` | `https://api.deltakura.dev/v0` | hosted API base URL |
+| `DELTAKURA_API_BASE` | `https://deltakura-api.deltakura.workers.dev/v0` | hosted API base URL |
 | `DELTAKURA_API_ENABLED` | unset | set to `1` to actually call the hosted API |
 | `DELTAKURA_NTA_MAX_SCAN_BYTES` | `268435456` | cap on gzipped bytes scanned per call |
 
@@ -199,8 +200,9 @@ gzipped CSVs written to a temporary directory, with invented names on real, chec
 ### モード
 
 法人番号系のツールは、`DELTAKURA_DATA_DIR` が設定されていればローカルのファイルを読み、
-未設定ならホスト版 API（`https://api.deltakura.dev/v0/…`）を呼びます。**API は未デプロイ**のため、
-現在は「remote not available yet」という明示的なエラーを返します（ネットワークアクセスは発生しません）。
+未設定ならホスト版 API（`https://deltakura-api.deltakura.workers.dev/v0/…`）を呼びます。
+API の呼び出しは `DELTAKURA_API_ENABLED=1` を設定したときだけ行います。未設定の間は
+「remote not available」というエラーを返し、ネットワークアクセスは発生しません。
 調達統計はパッケージに同梱しているので設定不要です。
 
 ### 出典（表示必須）

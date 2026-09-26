@@ -489,7 +489,8 @@ STORED_COLUMN_ORIGIN: Dict[str, str] = {
     "ats_created_at": "payload", "ats_updated_at": "payload",
     "job_title_normalized": "derived", "function_bucket": "derived",
     "is_japan": "derived", "japan_prefecture": "derived", "remote_flag": "derived",
-    "employment_type": "derived",
+    # "employment_type" is deliberately absent (PC-5): it stays unclassified, so
+    # re-adding the column fails the run until the Source Scout confirms it.
     "first_seen_at": "ours", "last_seen_at": "ours", "closed_at": "ours",
     "status": "ours", "consecutive_misses": "ours", "source_id": "ours",
     "tos_status": "ours", "attribution": "ours", "source_url": "ours",

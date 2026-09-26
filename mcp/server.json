@@ -29,14 +29,14 @@
         },
         {
           "name": "DELTAKURA_API_BASE",
-          "description": "Base URL of the hosted Deltakura read API. Defaults to https://api.deltakura.dev/v0.",
+          "description": "Base URL of the hosted Deltakura read API. Defaults to https://deltakura-api.deltakura.workers.dev/v0.",
           "isRequired": false,
           "isSecret": false,
           "format": "string"
         },
         {
           "name": "DELTAKURA_API_ENABLED",
-          "description": "Set to 1 to call the hosted API. While it is 0 or unset the 法人番号 tools report that remote mode is not available yet.",
+          "description": "Set to 1 to call the hosted API. While it is 0 or unset the 法人番号 tools make no network request and report that remote mode is off.",
           "isRequired": false,
           "isSecret": false,
           "format": "string"

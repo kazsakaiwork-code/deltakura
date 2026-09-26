@@ -1,11 +1,11 @@
 /**
  * Remote mode: the hosted Deltakura read API.
  *
- * The API is NOT deployed yet: it is blocked on a Cloudflare account, which is
- * pending operator approval.
- * Until DELTAKURA_API_ENABLED=1 is set, every call here returns a clear error
- * instead of touching the network, so the server is honest offline and stays
- * testable without a fixture HTTP server.
+ * The API is live at https://deltakura-api.deltakura.workers.dev/v0 (the
+ * default base). Remote calls are opt-in: until DELTAKURA_API_ENABLED=1 is set,
+ * every call here returns a clear error instead of touching the network, so the
+ * server makes no request the user did not switch on and stays testable without
+ * a fixture HTTP server.
  */
 import type { Config } from '../config.js';
 import type { CorporateLookupResult, DiffSummaryResult } from '../query/nta.js';
@@ -14,9 +14,9 @@ export class RemoteNotAvailableError extends Error {
   readonly endpoint: string;
   constructor(endpoint: string, detail?: string) {
     super(
-      `remote not available yet: ${endpoint} is not live. ` +
-        'The Deltakura read API has not been deployed (no Cloudflare account yet). ' +
-        'Set DELTAKURA_DATA_DIR to a local Deltakura data directory to answer this from local files instead.' +
+      `remote not available: ${endpoint} was not called. ` +
+        'Set DELTAKURA_API_ENABLED=1 to call the hosted Deltakura read API, or set ' +
+        'DELTAKURA_DATA_DIR to a local Deltakura data directory to answer this from local files instead.' +
         (detail ? ` (${detail})` : '')
     );
     this.name = 'RemoteNotAvailableError';

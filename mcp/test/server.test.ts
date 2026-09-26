@@ -88,16 +88,16 @@ describe('MCP surface', () => {
     expect(summary.payload.total_changes).toBe(6);
   });
 
-  it('reports "remote not available yet" when there is no local data directory', async () => {
+  it('reports "remote not available" when there is no local data directory and remote calls are off', async () => {
     const client = await connect();
     const lookup = await call(client, 'jp_corporate_number_lookup', { corporate_number: '1010001005145' });
     expect(lookup.isError).toBe(true);
     expect(lookup.payload.error).toBe('RemoteNotAvailableError');
-    expect(lookup.payload.message).toContain('remote not available yet');
+    expect(lookup.payload.message).toContain('remote not available');
 
     const summary = await call(client, 'jp_corporate_diff_summary', { from: '2026-09-01', to: '2026-09-03' });
     expect(summary.isError).toBe(true);
-    expect(summary.payload.message).toContain('remote not available yet');
+    expect(summary.payload.message).toContain('remote not available');
   });
 
   it('refuses a date range longer than 400 days', async () => {

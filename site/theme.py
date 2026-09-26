@@ -316,6 +316,79 @@ footer.site a:hover{color:var(--sumi)}
 .skip{position:absolute; left:-9999px}
 .skip:focus{position:static; display:inline-block; padding:8px 12px; background:var(--sumi); color:var(--shikkui)}
 
+/* stacked daily bars (articles): celadon for the main series, then neutrals */
+.sd-a{fill:var(--seiji)} .sd-b{fill:var(--h3)} .sd-c{fill:var(--namako)} .sd-d{fill:var(--usuzumi)} .sd-e{fill:var(--h5)} .sd-f{fill:var(--rule)}
+.dc rect[class^="sd-"]{stroke:var(--surface); stroke-width:.5}
+.sw.sd-a{background:var(--seiji)} .sw.sd-b{background:var(--h3)} .sw.sd-c{background:var(--namako)} .sw.sd-d{background:var(--usuzumi)} .sw.sd-e{background:var(--h5)} .sw.sd-f{background:var(--rule)}
+.sd-mean{stroke:var(--sumi); stroke-width:1; stroke-dasharray:5 3}
+.sd-ml{font-family:var(--data); font-size:13px; fill:var(--sumi); paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round}
+.sd-legend{margin-top:10px; font-size:13px}
+
+/* articles: a quiet reading column; the figures are the loud part */
+.post{max-width:720px}
+.post-meta{display:flex; flex-wrap:wrap; align-items:center; gap:4px 16px; font-size:13px; color:var(--namako); margin:4px 0 24px}
+.post-meta .ic{width:18px; height:18px; color:var(--seiji)}
+.post-meta time{font-family:var(--data); font-variant-numeric:tabular-nums; color:var(--sumi)}
+.lede{font-size:20px; line-height:1.7; margin:0 0 40px; padding:2px 0 2px 16px; border-left:3px solid var(--seiji)}
+.prose{line-height:1.9}
+.prose > p{margin:0 0 20px}
+.prose h2{font-size:20px; margin:48px 0 16px; padding-top:20px; border-top:1px solid var(--rule)}
+.prose h3{font-size:16px; margin:32px 0 12px}
+.prose h4{font-size:16px; margin:24px 0 8px; color:var(--namako)}
+.prose ul,.prose ol{margin:0 0 20px; padding-left:1.4em}
+.prose li{margin:4px 0}
+.prose li > ul,.prose li > ol{margin:4px 0 0}
+.prose blockquote{margin:0 0 20px; padding:2px 16px; border-left:3px solid var(--rule); color:var(--namako)}
+.prose blockquote p{margin:0 0 8px}
+.prose pre{overflow-x:auto; margin:0 0 20px; padding:12px 14px; background:var(--surface); border:1px solid var(--rule); border-radius:var(--r); font-size:13px; line-height:1.6}
+.prose hr{border:0; border-top:1px solid var(--rule); margin:40px 0}
+.prose .tablewrap{margin:0 0 24px}
+.prose td.c,.prose th.c{text-align:center}
+.prose figure.chart,.prose .strip,.prose .chart{margin:8px 0 32px}
+.prose .chart .tablewrap{margin:0}
+.prose figure.chart details{margin-top:12px}
+.fig-src{display:block; margin-top:2px; font-size:13px; color:var(--namako)}
+.post-end{margin-top:56px}
+.post-end h2{font-size:16px}
+.src-list{margin:0; padding-left:1.2em; font-size:13px; line-height:1.7; overflow-wrap:anywhere}
+.post-act{margin-top:40px; padding-top:24px; border-top:1px solid var(--rule)}
+.post-act .act{margin-top:0}
+.post-act .btn .ic{width:18px; height:18px; color:currentColor}
+.post-act .fine{margin:6px 0 0}
+
+/* article lists: a ledger of dated entries */
+.posts{list-style:none; margin:0; padding:0; border-top:1px solid var(--rule)}
+.posts li{display:grid; grid-template-columns:1fr; gap:2px 24px; padding:16px 0; border-bottom:1px solid var(--rule-soft)}
+@media(min-width:720px){.posts li{grid-template-columns:7.5em 1fr}}
+.posts time{font-family:var(--data); font-variant-numeric:tabular-nums; font-size:13px; color:var(--namako); padding-top:3px}
+.posts a{font-weight:700; line-height:1.5}
+.posts p{grid-column:-2; margin:0; font-size:13px; color:var(--namako); line-height:1.6}
+.posts.row{display:grid; grid-template-columns:1fr; gap:16px; border-top:0}
+@media(min-width:720px){.posts.row{grid-template-columns:repeat(3,1fr); gap:24px}}
+.posts.row li{grid-template-columns:1fr; align-content:start; padding:14px 0 0; border-bottom:0; border-top:2px solid var(--sumi)}
+.posts.row p{grid-column:auto}
+.more{margin:16px 0 0; font-size:13px}
+.lone-line{margin:24px 0}
+
+/* subscribe: URL slips, one click selects the whole address */
+.subs{list-style:none; margin:24px 0 24px; padding:0; display:grid; grid-template-columns:1fr; gap:16px}
+@media(min-width:720px){.subs{grid-template-columns:repeat(2,1fr)}}
+.subs > li{display:flex; flex-direction:column; gap:12px; padding:20px; background:var(--surface); border:1px solid var(--rule); border-radius:var(--r)}
+.sub-h{display:flex; align-items:center; gap:10px}
+.sub-h .ic{width:28px; height:28px; color:var(--seiji)}
+.sub-h h2{margin:0; font-size:20px}
+.subs p{margin:0}
+.urls{margin:0; display:grid; gap:10px}
+.urls div{display:grid; gap:2px}
+.urls dt{font-size:13px; color:var(--namako)}
+.urls dd{margin:0}
+code.url,pre.url{display:block; margin:0; font-family:var(--data); font-size:13px; line-height:1.5; padding:8px 10px;
+  border:1px dashed var(--usuzumi); border-radius:4px; background:var(--shikkui); color:var(--sumi);
+  -webkit-user-select:all; user-select:all; overflow-wrap:anywhere; word-break:break-all; cursor:text}
+pre.url{white-space:pre-wrap}
+pre.url code{font-size:inherit}
+.state{align-self:flex-start; font-size:13px; color:var(--namako); border:1px dashed var(--usuzumi); border-radius:4px; padding:2px 10px}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important; transition:none!important}
 }

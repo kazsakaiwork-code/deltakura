@@ -3,7 +3,8 @@
  * baked in, and no path in this package is absolute.
  */
 
-export const DEFAULT_API_BASE = 'https://api.deltakura.dev/v0';
+/** The live Worker on the project's workers.dev subdomain (api/, env production). */
+export const DEFAULT_API_BASE = 'https://deltakura-api.deltakura.workers.dev/v0';
 
 export interface Config {
   /**
@@ -12,11 +13,11 @@ export interface Config {
    * directly. When unset, those tools fall back to remote mode.
    */
   dataDir?: string;
-  /** Base URL of the (not yet deployed) Deltakura read API. */
+  /** Base URL of the hosted Deltakura read API. */
   apiBase: string;
   /**
-   * Remote mode is wired but switched off by default, because the API is not
-   * deployed yet. Set DELTAKURA_API_ENABLED=1 once it is live.
+   * Remote calls are opt-in: nothing leaves the machine unless
+   * DELTAKURA_API_ENABLED=1 is set.
    */
   remoteEnabled: boolean;
   /** Safety valve: refuse to stream more than this many bytes of gzipped diffs per call. */

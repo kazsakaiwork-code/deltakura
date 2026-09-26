@@ -14,19 +14,19 @@ startCommand:
         description: >-
           Path to a local Deltakura data directory. When set, the corporate-number
           tools read <dir>/nta/normalized/*.csv.gz directly. When unset they use
-          the hosted Deltakura API, which is not deployed yet.
+          the hosted Deltakura API (see apiEnabled).
       apiBase:
         type: string
         title: API base URL
-        default: https://api.deltakura.dev/v0
+        default: https://deltakura-api.deltakura.workers.dev/v0
         description: Base URL of the hosted Deltakura read API.
       apiEnabled:
         type: boolean
         title: Enable the hosted API
         default: false
         description: >-
-          Call the hosted API instead of reporting that remote mode is not
-          available yet. Leave off until the API is live.
+          Call the hosted API. While off, the corporate-number tools make no
+          network request and report that remote mode is off.
   commandFunction: |-
     (config) => ({
       command: 'deltakura-mcp',
@@ -38,5 +38,5 @@ startCommand:
       }
     })
   exampleConfig:
-    apiBase: https://api.deltakura.dev/v0
+    apiBase: https://deltakura-api.deltakura.workers.dev/v0
     apiEnabled: false

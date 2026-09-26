@@ -22,10 +22,11 @@ Environment:
   DELTAKURA_DATA_DIR            path to a local Deltakura data directory. When set,
                                 the 法人番号 tools read <dir>/nta/normalized/*.csv.gz
                                 and <dir>/nta/manifest.csv. When unset, those tools
-                                use the hosted API, which is not deployed yet.
-  DELTAKURA_API_BASE            override the hosted API base URL.
+                                use the hosted API (opt-in, see below).
+  DELTAKURA_API_BASE            override the hosted API base URL
+                                (default https://deltakura-api.deltakura.workers.dev/v0).
   DELTAKURA_API_ENABLED=1       actually call the hosted API instead of returning
-                                "remote not available yet".
+                                "remote not available".
   DELTAKURA_NTA_MAX_SCAN_BYTES  cap on the bytes of gzipped diffs scanned per call.
 
 Procurement statistics ship inside the package and need no configuration.

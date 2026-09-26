@@ -39,11 +39,19 @@
         ]
       },
       {
-        "source": "/feeds/**",
+        "source": "/feeds/*.xml",
         "headers": [
           { "key": "Access-Control-Allow-Origin", "value": "*" },
           { "key": "Cache-Control", "value": "public, max-age=3600" },
           { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" }
+        ]
+      },
+      {
+        "source": "/feeds/*.json",
+        "headers": [
+          { "key": "Access-Control-Allow-Origin", "value": "*" },
+          { "key": "Cache-Control", "value": "public, max-age=3600" },
+          { "key": "Content-Type", "value": "application/feed+json; charset=utf-8" }
         ]
       },
       {

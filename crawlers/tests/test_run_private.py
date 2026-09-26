@@ -185,6 +185,17 @@ def test_stored_columns_are_classified_and_fail_closed():
         assert col in ats_collect.JOBS_COLUMNS
 
 
+def test_employment_type_is_not_stored():
+    """PC-5: the Lever-derived employment type stays out until the Scout confirms it."""
+    assert "employment_type" not in ats_collect.JOBS_COLUMNS
+    try:
+        rp.check_stored_columns(list(ats_collect.JOBS_COLUMNS) + ["employment_type"])
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("employment_type must fail the stored-column allow-list")
+
+
 # --------------------------------------------------------- closed rule
 
 def _job(pid, misses="0", status="open"):

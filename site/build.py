@@ -41,6 +41,7 @@ from pathlib import Path
 
 # Helper modules next to this file (standard library only).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import articles as articles_mod  # noqa: E402  front matter + the Markdown subset
 import charts  # noqa: E402  the 40-day strip and the small charts
 from icons import icon  # noqa: E402  the in-house line icon set
 from theme import CSS  # noqa: E402  the one stylesheet
@@ -90,6 +91,35 @@ GITHUB_SITE = GITHUB_REPO + "/tree/main/site"
 # The live Worker (api/, env "production"). firebase.json's CSP connect-src
 # must name exactly this host; change both in the same commit.
 INTENT_ENDPOINT = "https://deltakura-api.deltakura.workers.dev/v0/intent"
+
+# Every feed the site links to is served, and counted, by the same Worker
+# (api/src/routes/feeds.ts, api/src/feedcount.ts): distinct fetchers per feed
+# and UTC day via a salted hash, no raw IP stored. The static copies this build
+# writes under /feeds/ stay the source the Worker relays; links, <link
+# rel="alternate"> and the self URLs inside the feeds point at the Worker.
+API_BASE = "https://deltakura-api.deltakura.workers.dev"
+FEED_BASE = API_BASE + "/v0/feeds"
+FEED_URLS = {
+    "articles.xml": FEED_BASE + "/articles.xml",
+    "articles.json": FEED_BASE + "/articles.json",
+    "nta-diff.xml": FEED_BASE + "/nta-diff.xml",
+    "nta-diff.json": FEED_BASE + "/nta-diff.json",
+}
+FEED_STATS_URL = FEED_BASE + "/stats"
+
+# The MCP server (mcp/). Its npm package is published only after operator
+# approval; until then the site links to the source and says so in one line.
+MCP_NPM_PUBLISHED = False
+MCP_PACKAGE = "@deltakura/mcp"
+GITHUB_MCP = GITHUB_REPO + "/tree/main/mcp"
+GITHUB_COMMITS_ATOM = GITHUB_REPO + "/commits/main.atom"
+
+# Articles: one Markdown file each (format: site/articles.py).
+# DELTAKURA_ARTICLES_DIR points the build at another directory (a draft set, a
+# test fixture); the default is the committed one.
+CONTENT_DIR = Path(
+    os.environ.get("DELTAKURA_ARTICLES_DIR", "").strip() or (SITE_DIR / "content" / "articles")
+).expanduser().resolve()
 
 # --------------------------------------------------------------------------
 # The intent contract
@@ -163,6 +193,15 @@ SECTORS = {
     "防衛": ("mod", "Defense"),
     "立法・司法・会計検査": ("legislature-judiciary-audit", "Legislature, judiciary & board of audit"),
 }
+
+PREF_JA = (
+    "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県",
+    "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県",
+    "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府",
+    "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県",
+    "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県",
+    "鹿児島県", "沖縄県",
+)
 
 PREF_EN = {
     "01": "Hokkaido", "02": "Aomori", "03": "Iwate", "04": "Miyagi",
@@ -711,11 +750,20 @@ JS = """/* Deltakura intent button. No cookies, no email, no third party.
 """
 
 
+# The languages that have at least one article; set in main() before any page
+# is rendered. "記事" joins the navigation only where there is something to read.
+ARTICLE_LANGS: set = set()
+
+
 def nav_items(lang: str):
     p = f"/{lang}/"
-    return [
+    items = [
         (p + "bet-a/", t(lang, "落札統計", "Tender awards")),
         (p + "bet-c/", t(lang, "法人番号の差分", "Registry diff")),
+    ]
+    if lang in ARTICLE_LANGS:
+        items.append((p + "articles/", t(lang, "記事", "Articles")))
+    return items + [
         (p + "pricing.html", t(lang, "料金", "Pricing")),
         (p + "privacy.html", t(lang, "プライバシー", "Privacy")),
     ]
@@ -733,8 +781,14 @@ def render_page(
     jsonld=None,
     is_data_page: bool = False,
     attribution=None,
+    switch_path=None,
+    og_type: str = "website",
 ):
     """Return the html string.
+
+    `switch_path` is where the language link goes when the page has no
+    counterpart in the other language (alt_path == path): an article index,
+    for example, rather than a page that does not exist.
 
     `attribution` is a list of source lines. It is rendered once, in the
     footer zone, on every page that shows a figure derived from the sources
@@ -770,9 +824,14 @@ def render_page(
         )
         for href, label in nav_items(lang)
     )
-    nav += '<a class="lang" href="{}" hreflang="{}" rel="alternate">{}</a>'.format(
-        e(alt_path), other, "English" if lang == "ja" else "日本語"
-    )
+    if switch_path and alt_path == path:
+        nav += '<a class="lang" href="{}" hreflang="{}">{}</a>'.format(
+            e(switch_path), other, "English" if lang == "ja" else "日本語"
+        )
+    else:
+        nav += '<a class="lang" href="{}" hreflang="{}" rel="alternate">{}</a>'.format(
+            e(alt_path), other, "English" if lang == "ja" else "日本語"
+        )
 
     attrib = attribution_block(lang, attribution) if attribution else ""
     disclaimer = t(
@@ -784,7 +843,7 @@ def render_page(
         (OPERATOR_URL, t(lang, "運営: Sirevo", "Operated by Sirevo"), True),
         (GITHUB_ORG, "GitHub", True),
         (GITHUB_ISSUES, t(lang, "削除・訂正の依頼（GitHub Issues）", "Removal and corrections (GitHub Issues)"), True),
-        ("/feeds/nta-diff.xml", "RSS", False),
+        (f"/{lang}/subscribe.html", t(lang, "購読（RSS・JSON Feed）", "Subscribe (RSS, JSON Feed)"), False),
         ("/data/", t(lang, "データファイル（JSON）", "Data files (JSON)"), False),
         (f"/{lang}/privacy.html", t(lang, "プライバシー", "Privacy"), False),
     ]
@@ -805,7 +864,7 @@ def render_page(
 <link rel="canonical" href="{e(canonical)}">
 {alternates}
 <link rel="alternate" hreflang="x-default" href="{e(BASE_URL)}/">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{e(og_type)}">
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{e(canonical)}">
@@ -816,7 +875,9 @@ def render_page(
 <meta name="theme-color" content="#15181B" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="/assets/style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2l6 11H2z' fill='%233E7F74'/%3E%3C/svg%3E">
-<link rel="alternate" type="application/rss+xml" title="Deltakura Registry Diff (weekly)" href="/feeds/nta-diff.xml">
+<link rel="alternate" type="application/rss+xml" title="Deltakura 記事 / Articles" href="{e(FEED_URLS['articles.xml'])}">
+<link rel="alternate" type="application/feed+json" title="Deltakura 記事 / Articles (JSON Feed)" href="{e(FEED_URLS['articles.json'])}">
+<link rel="alternate" type="application/rss+xml" title="Deltakura Registry Diff (weekly)" href="{e(FEED_URLS['nta-diff.xml'])}">
 {blocks}</head>
 <body>
 <a class="skip" href="#main">{e(t(lang, "本文へスキップ", "Skip to content"))}</a>
@@ -981,7 +1042,7 @@ def bet_a_grid(bet_a_pages):
     return sectors, years, by_key
 
 
-def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
+def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at, arts=()):
     path = f"/{lang}/"
     alt = "/en/" if lang == "ja" else "/ja/"
     fy_max = max(p["fiscal_year"] for p in bet_a_pages)
@@ -1061,10 +1122,20 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
     tiles = "".join(f"<li>{icon(i)}<b>{e(x)}</b></li>" for i, x in nots)
 
     doors = f"""<ul class="doors">
-<li>{icon("rss")}<span><a href="/feeds/nta-diff.xml">RSS</a><small>{e(t(lang, "法人番号の差分・週次", "Registry diff, weekly"))}</small></span></li>
+<li>{icon("rss")}<span><a href="/{lang}/subscribe.html">RSS・JSON Feed</a><small>{e(t(lang, "記事と法人番号の差分", "Articles and the registry diff"))}</small></span></li>
 <li>{icon("braces")}<span><a href="/data/">{e(t(lang, "データファイル（JSON）", "Data files (JSON)"))}</a><small>{e(t(lang, "全ページと同じ数値", "The same numbers as every page"))}</small></span></li>
-<li>{icon("plug")}<span><a href="{e(GITHUB_ORG)}" rel="noopener">{e(t(lang, "MCP サーバー", "MCP server"))}</a><small>{e(t(lang, "準備中", "Coming soon"))}</small></span></li>
+<li>{icon("plug")}<span><a href="{e(GITHUB_MCP)}" rel="noopener">{e(t(lang, "MCP サーバー", "MCP server"))}</a><small>{e(MCP_PACKAGE if MCP_NPM_PUBLISHED else t(lang, "準備中", "Coming soon"))}</small></span></li>
 </ul>"""
+
+    teaser = ""
+    if arts:
+        teaser = f"""
+<section class="sec" aria-labelledby="h-posts">
+<h2 id="h-posts">{icon("ledger")}{e(t(lang, "新しい記事", "Latest articles"))}</h2>
+{article_list(lang, arts[:3], row=True)}
+<p class="more"><a href="/{lang}/articles/">{e(t(lang, "すべての記事", "All articles"))}</a></p>
+</section>
+"""
 
     body = f"""
 <div class="hero">
@@ -1079,7 +1150,7 @@ def build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at):
 {cards}
 {intent_note(lang)}
 </section>
-
+{teaser}
 <section class="sec" aria-labelledby="h-how">
 <h2 id="h-how">{e(t(lang, "仕組み", "How it works"))}</h2>
 {flow}
@@ -1185,10 +1256,29 @@ def build_bet_a_index(lang, pages, bet_a_prov, built_at):
     alt = f"/{'en' if lang == 'ja' else 'ja'}/bet-a/"
 
     sectors, years, by_key = bet_a_grid(pages)
+    heat, scale = bet_a_heat(lang, pages)
+
+    title = t(
+        lang,
+        "国の落札実績 統計 — 年度 × 発注府省 | Deltakura",
+        "Japanese national tender awards — by fiscal year and buying ministry | Deltakura",
+    )
+    return _bet_a_index_page(lang, path, alt, pages, bet_a_prov, sectors, years, heat, scale, title)
+
+
+def bet_a_heat(lang, pages, *, by_total=False):
+    """The year x ministry heatmap table and its colour legend (index and articles).
+
+    `pages` may be a window of fiscal years; `by_total` orders the rows by their
+    total over that window, largest first (the index keeps the slug order).
+    """
+    sectors, years, by_key = bet_a_grid(pages)
     cls_of, legend = heat_scale(p["n_awards"] for p in pages)
 
     row_totals = {s: sum(by_key[(s, y)]["n_awards"] for y in years if (s, y) in by_key) for s in sectors}
     max_total = max(row_totals.values()) or 1
+    if by_total:
+        sectors = sorted(sectors, key=lambda s: (-row_totals[s], SECTORS[s][0]))
 
     head = "".join(f'<th scope="col">{y}</th>' for y in years)
     head = (
@@ -1233,12 +1323,10 @@ def build_bet_a_index(lang, pages, bet_a_prov, built_at):
         e(t(lang, "色の凡例（件数）", "Colour legend (awards)")),
         "".join(f'<li class="{c}">{e(r)}</li>' for c, r in legend),
     )
+    return heat, scale
 
-    title = t(
-        lang,
-        "国の落札実績 統計 — 年度 × 発注府省 | Deltakura",
-        "Japanese national tender awards — by fiscal year and buying ministry | Deltakura",
-    )
+
+def _bet_a_index_page(lang, path, alt, pages, bet_a_prov, sectors, years, heat, scale, title):
     desc_ja = (
         f"調達ポータルの落札実績 {bet_a_prov['records']:,} 件を、年度 × 発注府省で集計した "
         f"{len(pages)} ページの統計。件数、落札価格の中央値と四分位、落札者の所在地。"
@@ -1707,7 +1795,7 @@ def build_bet_c(lang, bet_c, built_at):
 <section class="sec" aria-labelledby="h-take">
 <h2 id="h-take">{e(t(lang, "受け取り方", "Take the data"))}</h2>
 <ul class="doors">
-<li>{icon("rss")}<span><a href="/feeds/nta-diff.xml">RSS</a><small>{e(t(lang, "週次", "weekly"))}</small></span></li>
+<li>{icon("rss")}<span><a href="{e(FEED_URLS['nta-diff.xml'])}">RSS</a><small>{e(t(lang, "週次", "weekly"))}</small></span></li>
 <li>{icon("braces")}<span><a href="/data/bet-c/daily.json">{e(t(lang, "データファイル（JSON）", "Data file (JSON)"))}</a><small>{e(t(lang, "日次件数と内訳", "daily counts and breakdowns"))}</small></span></li>
 <li>{icon("code")}<span><a href="{e(GITHUB_CORE)}" rel="noopener">{e(t(lang, "収集コード", "Collector code"))}</a><small>MIT</small></span></li>
 </ul>
@@ -1759,7 +1847,7 @@ def build_bet_c(lang, bet_c, built_at):
             {
                 "@type": "DataDownload",
                 "encodingFormat": "application/rss+xml",
-                "contentUrl": BASE_URL + "/feeds/nta-diff.xml",
+                "contentUrl": FEED_URLS["nta-diff.xml"],
             },
         ],
         "isBasedOn": {
@@ -1870,8 +1958,11 @@ def build_privacy(lang, bet_a_prov, bet_c, built_at, any_estimated=False):
         t(lang, "読み込むもの・数えないもの", "What loads, and what is not counted"),
         [
             e(t(lang, "スクリプトは自前の2本だけ: ", "Two self-hosted scripts only: ")) + "<code>/assets/config.js</code>, <code>/assets/intent.js</code>",
-            e(t(lang, "アクセス解析はありません。ページの閲覧数も RSS の購読数も数えていません。",
-                "No analytics. Page visits and RSS subscribers are not counted.")),
+            e(t(lang, "アクセス解析はありません。ページの閲覧数は数えていません。",
+                "No analytics. Page visits are not counted.")),
+            e(t(lang, "フィード（RSS・JSON Feed）の取得は、フィード別・日別の件数だけを数えます。重複は User-Agent と IP アドレス上位16ビットのソルト付きハッシュで除き、ハッシュは25時間で消えます。IP アドレスそのものは保存しません。集計値: ",
+                "Feed fetches (RSS, JSON Feed) are counted as daily totals per feed, de-duplicated by a salted hash of the User-Agent and the first 16 bits of the IP address that is deleted after 25 hours. No IP address is stored. Totals: "))
+            + f"<code>{e(FEED_STATS_URL)}</code>",
             e(t(lang, "計測を追加する場合は、先にこのページと CSP を更新します。",
                 "If measurement is ever added, this page and the CSP change first.")),
         ],
@@ -2000,6 +2091,590 @@ def build_root(bet_a_pages, bet_c, built_at):
 
 
 # --------------------------------------------------------------------------
+# Articles
+# --------------------------------------------------------------------------
+#
+# Written by people as Markdown under site/content/articles/ (format and the
+# supported subset: site/articles.py). Every article page carries Article
+# JSON-LD, the three-part attribution block, a notify button (the intent
+# contract: the button counts views and clicks with the rest of the site) and
+# the feed links. check() fails the build if any of that is missing.
+
+
+def article_path(lang: str, slug: str) -> str:
+    return f"/{lang}/articles/{slug}.html"
+
+
+def article_list(lang, arts, row=False):
+    items = "".join(
+        f'<li><time class="num" datetime="{a["date"].isoformat()}">{a["date"].isoformat()}</time>'
+        f'<a href="{e(article_path(a["lang"], a["slug"]))}">{e(a["title"])}</a>'
+        f'<p>{e(a["description"])}</p></li>'
+        for a in arts
+    )
+    return f'<ul class="posts{" row" if row else ""}">{items}</ul>'
+
+
+def llms_articles(arts) -> str:
+    if not arts:
+        return ""
+    lines = ["", "## Articles", ""]
+    for a in arts:
+        lines.append(f"- {a['date'].isoformat()} ({a['lang']}) {a['title']}: {BASE_URL}{article_path(a['lang'], a['slug'])}")
+    return "\n".join(lines) + "\n"
+
+
+#: The notify button on an article, by the article's `product`. The ids are
+#: written out literally so api/test/intent-contract.test.ts sees them.
+ARTICLE_INTENT = {
+    "bet_a": lambda lang: intent_button(lang, "bet_a_report", "更新を受け取る", "Notify me"),
+    "bet_c": lambda lang: intent_button(lang, "bet_c_registry_diff", "更新を受け取る", "Notify me"),
+}
+
+#: What an article may embed with {{chart:<id>}}, for the error message.
+ARTICLE_CHART_IDS = (
+    "nta-strip[:<oldest-listed-upstream>[:<checked-on>]]", "nta-40day-strip (= nta-strip)",
+    "nta-daily", "nta-daily-by-process", "nta-prefecture-top10",
+    "bet-a-heatmap[:<fy-from>:<fy-to>]", "awards-sector-fy-heatmap (FY2014-FY2025)",
+    "bet-a-years[:<sector>]", "bet-a-sectors[:<fy>]", "bet-a-median[:<fy>]",
+    "bet-a-prefs[:<fy>]", "bet-a-box:<sector>:<fy>",
+)
+
+#: Charts an article asked for that the published data cannot draw. The build
+#: fails with this reason rather than drawing them from anywhere else: every
+#: figure on the site comes from data/published/, so CI and a local build agree.
+ARTICLE_CHARTS_UNAVAILABLE = {
+    "award-month-share": (
+        "needs award counts by month of 落札決定日, which data/published/ does not carry "
+        "(stats_v0.csv is fiscal year x prefecture x sector). Publish a month aggregate first, "
+        "or remove the placeholder"
+    ),
+}
+
+
+def article_charts(bet_a_pages, bet_c):
+    """Returns factory(lang) -> (chart(id, args) -> html, datasets used).
+
+    Every chart is built here, at build time, from the same published numbers
+    as the statistics pages; an article cannot bring its own figures.
+    """
+    ArticleError = articles_mod.ArticleError
+    sectors, years, by_key = bet_a_grid(bet_a_pages)
+    by_slug = {SECTORS[s][0]: s for s in sectors}
+    fy_min, fy_max = min(years), max(years)
+
+    def fy_of(arg):
+        m = re.fullmatch(r"(?:fy)?(\d{4})", arg.lower())
+        if not m or int(m.group(1)) not in years:
+            raise ArticleError(f"unknown fiscal year {arg!r} (FY{fy_min}-FY{fy_max})")
+        return int(m.group(1))
+
+    def sector_of(arg):
+        if arg not in by_slug:
+            raise ArticleError(f"unknown sector {arg!r}; one of: {', '.join(sorted(by_slug))}")
+        return by_slug[arg]
+
+    def factory(lang):
+        used = set()
+        count = [0]
+
+        def sname(s):
+            return s if lang == "ja" else SECTORS[s][1]
+
+        def src_line(kind):
+            return {
+                "bet-a": t(lang, "出典：調達ポータル 落札実績（Deltakura が集計）", "Source: 調達ポータル award data, aggregated by Deltakura"),
+                "nta": t(lang, "出典：国税庁 法人番号公表サイト 差分（Deltakura が集計）", "Source: 国税庁 corporate-number diff, aggregated by Deltakura"),
+            }[kind]
+
+        def figure(inner, caption, kind, extra=""):
+            used.add(kind)
+            return (
+                f'<figure class="fig chart">{inner}<figcaption>{e(caption)}'
+                f'<span class="fig-src">{e(src_line(kind))}</span></figcaption>{extra}</figure>'
+            )
+
+        def fy_label(fy):
+            return t(lang, f"{fy}年度", f"FY{fy}") if fy else t(lang, f"FY{fy_min}–FY{fy_max}", f"FY{fy_min}-FY{fy_max}")
+
+        def chart(cid, args):
+            count[0] += 1
+            uid = f"ch{count[0]}"
+
+            def nargs(lo, hi):
+                if not lo <= len(args) <= hi:
+                    raise ArticleError(f"chart {cid!r} takes {lo}-{hi} argument(s), got {len(args)}")
+
+            if cid in ARTICLE_CHARTS_UNAVAILABLE:
+                raise ArticleError(f"chart {cid!r} {ARTICLE_CHARTS_UNAVAILABLE[cid]}")
+
+            if cid in ("nta-strip", "nta-40day-strip"):
+                nargs(0, 2)
+                for a in args:
+                    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", a):
+                        raise ArticleError(f"chart {cid!r}: arguments are ISO dates, not {a!r}")
+                used.add("nta")
+                return charts.strip_figure(
+                    lang, bet_c["days"], bet_c["daily"], bet_c["total"], uid=uid,
+                    oldest_upstream=args[0] if args else None,
+                    checked_on=args[1] if len(args) > 1 else None,
+                )
+
+            if cid == "nta-daily-by-process":
+                nargs(0, 0)
+                days = bet_c["days"]
+                main_codes = ("01", "12", "21", "11", "71")
+                classes = ("a", "b", "c", "d", "e")
+                series = []
+                for code, cls in zip(main_codes, classes):
+                    ja, en = PROCESS_CODES.get(code, (code, code))
+                    series.append((cls, ja if lang == "ja" else en,
+                                   {d: bet_c["daily_process"][d].get(code, 0) for d in days}))
+                series.append(("f", t(lang, "その他", "Other"), {
+                    d: sum(v for c, v in bet_c["daily_process"][d].items() if c not in main_codes) for d in days
+                }))
+                mean = bet_c["total"] / len(days) if days else 0
+                svg, legend = charts.stacked_daily(lang, days, series, uid=uid, mean=mean)
+                return figure(
+                    svg,
+                    t(lang, f"公表日ごとの件数を処理区分で積み上げ。{days[0]}〜{days[-1]}、{len(days)}日分。点線は1日平均。",
+                      f"Records per publication day, stacked by change type, {days[0]} to {days[-1]} ({len(days)} days). Dashed line = daily mean."),
+                    "nta",
+                    legend + labels([t(lang, "土日・祝日・12/29〜1/3 = 公表なし", "Weekends, holidays, 29 Dec-3 Jan = no file")]),
+                )
+
+            if cid == "nta-prefecture-top10":
+                nargs(0, 0)
+                prefs = bet_c["prefectures"]
+                en_of = {ja: PREF_EN[f"{i + 1:02d}"] for i, ja in enumerate(PREF_JA)}
+
+                def pname(name):
+                    return name if lang == "ja" else en_of.get(name, name)
+
+                ranked = prefs.most_common()
+                full = table(
+                    "", [t(lang, "都道府県", "Prefecture"), t(lang, "件数", "Records"), t(lang, "構成比", "Share")],
+                    [[e(pname(k)), num(v), pct(v / bet_c["total"])] for k, v in ranked], ["", "n", "n"],
+                )
+                return figure(
+                    charts.hbars([(e(pname(k)), v) for k, v in ranked[:10]], total=bet_c["total"]),
+                    t(lang, f"都道府県別の件数、上位10。{bet_c['first_day']}〜{bet_c['last_day']}、{bet_c['n_files']}公表日。構成比は全{bet_c['total']:,}件に対して。",
+                      f"Records by prefecture, top 10, {bet_c['first_day']} to {bet_c['last_day']} ({bet_c['n_files']} publication days). Shares are of all {bet_c['total']:,} records."),
+                    "nta",
+                    labels([t(lang, "都道府県 = 各レコードの本店所在地", "Prefecture = the record's registered head office")])
+                    + f'<details><summary>{e(t(lang, f"{len(ranked)}都道府県の表", f"All {len(ranked)} prefectures"))}</summary>{full}</details>',
+                )
+
+            if cid == "nta-daily":
+                nargs(0, 0)
+                days = bet_c["days"]
+                vals = [bet_c["daily"][d] for d in days]
+                return figure(
+                    charts.daily_chart(lang, days, vals),
+                    t(lang, f"公表日ごとの差分件数。{days[0]}〜{days[-1]}、{len(days)}日分。",
+                      f"Registry diff records per publication day, {days[0]} to {days[-1]} ({len(days)} days)."),
+                    "nta",
+                    labels([t(lang, "土日・祝日・12/29〜1/3 = 公表なし", "Weekends, holidays, 29 Dec-3 Jan = no file")]),
+                )
+
+            if cid in ("bet-a-heatmap", "awards-sector-fy-heatmap"):
+                if cid == "awards-sector-fy-heatmap":
+                    nargs(0, 0)
+                    lo, hi = 2014, 2025
+                else:
+                    if len(args) not in (0, 2):
+                        raise ArticleError(f"chart {cid!r} takes no argument or <fy-from>:<fy-to>")
+                    lo, hi = (fy_of(args[0]), fy_of(args[1])) if args else (fy_min, fy_max)
+                if lo > hi:
+                    raise ArticleError(f"chart {cid!r}: FY{lo} is after FY{hi}")
+                used.add("bet-a")
+                window = [p for p in bet_a_pages if lo <= p["fiscal_year"] <= hi]
+                heat, scale = bet_a_heat(lang, window, by_total=True)
+                notes = [t(lang, "セクター = 発注した府省", "Sector = the ministry that bought")]
+                if lo <= 2015:
+                    notes.append(t(lang, "FY2013–2015 = 公表の立ち上げ期", "FY2013-2015 = the publisher's ramp-up"))
+                return (
+                    f'<div class="chart">{heat}{scale}{labels(notes)}'
+                    f'<p class="fig-src">{e(src_line("bet-a"))}</p></div>'
+                )
+
+            if cid == "bet-a-years":
+                nargs(0, 1)
+                sector = sector_of(args[0]) if args else None
+                rows = [
+                    (y, sum(by_key[(s, y)]["n_awards"] for s in sectors
+                            if (s, y) in by_key and (sector is None or s == sector)))
+                    for y in years
+                ]
+                who = f"（{sname(sector)}）" if sector and lang == "ja" else (f" ({sname(sector)})" if sector else "")
+                table_html = table(
+                    "", [t(lang, "年度", "Fiscal year"), t(lang, "件数", "Awards")],
+                    [[e(fy_label(y)), num(v)] for y, v in rows], ["", "n"],
+                )
+                return figure(
+                    charts.year_bars(lang, rows, uid=uid),
+                    t(lang, f"年度別の落札件数{who}。{fy_label(None)}。", f"Awards per fiscal year{who}, {fy_label(None)}."),
+                    "bet-a",
+                    f'<details><summary>{e(t(lang, "数値", "Numbers"))}</summary>{table_html}</details>'
+                    + labels([t(lang, "FY2013–2015 = 公表の立ち上げ期", "FY2013-2015 = the publisher's ramp-up")]),
+                )
+
+            if cid == "bet-a-sectors":
+                nargs(0, 1)
+                fy = fy_of(args[0]) if args else None
+                rows = [
+                    (s, sum(by_key[(s, y)]["n_awards"] for y in years if (s, y) in by_key and (fy is None or y == fy)))
+                    for s in sectors
+                ]
+                rows = sorted((r for r in rows if r[1]), key=lambda r: -r[1])
+                return figure(
+                    charts.hbars([(e(sname(s)), n) for s, n in rows], total=sum(n for _, n in rows)),
+                    t(lang, f"発注した府省（セクター）別の落札件数、{fy_label(fy)}。", f"Awards by buying ministry sector, {fy_label(fy)}."),
+                    "bet-a",
+                    labels([t(lang, "セクター = 発注した府省", "Sector = the ministry that bought")]),
+                )
+
+            if cid == "bet-a-median":
+                nargs(0, 1)
+                fy = fy_of(args[0]) if args else fy_max
+                pages = [by_key[(s, fy)] for s in sectors if (s, fy) in by_key]
+                pages.sort(key=lambda p: -p["amount_median_jpy"])
+                estimated = any(not p["quantiles_exact"] for p in pages)
+                rows = [(e(sname(p["sector"]) + ("" if p["quantiles_exact"] else "†")), p["amount_median_jpy"]) for p in pages]
+                notes = [t(lang, "セクター = 発注した府省", "Sector = the ministry that bought"),
+                         t(lang, "予定価格: 非公表", "Predicted price: not published")]
+                if estimated:
+                    notes.append(t(lang, "† 中央値は推定値", "† median is an estimate"))
+                return figure(
+                    charts.hbars(rows, fmt=yen),
+                    t(lang, f"落札価格の中央値（府省セクター別、{fy_label(fy)}）。", f"Median award price by buying ministry sector, {fy_label(fy)}."),
+                    "bet-a",
+                    labels(notes),
+                )
+
+            if cid == "bet-a-prefs":
+                nargs(0, 1)
+                fy = fy_of(args[0]) if args else None
+                counts = collections.Counter()
+                names = {}
+                for p in bet_a_pages:
+                    if fy is not None and p["fiscal_year"] != fy:
+                        continue
+                    for b in p["buckets"]:
+                        key = b["prefecture_code"] or ""
+                        counts[key] += b["n_awards"]
+                        if b["prefecture"] == "不明":
+                            names[key] = t(lang, "不明（個人事業主）", "Unknown (sole proprietors)")
+                        else:
+                            names[key] = b["prefecture"] if lang == "ja" else PREF_EN.get(key, b["prefecture"])
+                total = sum(counts.values())
+                top = counts.most_common(10)
+                return figure(
+                    charts.hbars([(e(names[k]), n) for k, n in top], total=total),
+                    t(lang, f"落札者の本店所在地（都道府県）別の件数、上位10、{fy_label(fy)}。",
+                      f"Awards by the winner's registered prefecture, top 10, {fy_label(fy)}."),
+                    "bet-a",
+                    labels([t(lang, "所在地 = 落札者の本店所在地", "Prefecture = winner's registered head office")]),
+                )
+
+            if cid == "bet-a-box":
+                nargs(2, 2)
+                sector, fy = sector_of(args[0]), fy_of(args[1])
+                page = by_key.get((sector, fy))
+                if not page:
+                    raise ArticleError(f"no statistics page for {args[0]} FY{fy}")
+                dagger = "" if page["quantiles_exact"] else "†"
+                box = charts.box_plot(
+                    lang, page["amount_min_jpy"], page["amount_q1_jpy"], page["amount_median_jpy"],
+                    page["amount_q3_jpy"], page["amount_max_jpy"], estimated=bool(dagger), uid=uid,
+                )
+                five = "".join(
+                    f'<li><span class="k">{e(k)}</span><span class="v">{e(v)}</span></li>'
+                    for k, v in (
+                        (t(lang, "最小", "Min"), yen(page["amount_min_jpy"])),
+                        (t(lang, "第1四分位", "Q1") + dagger, yen(page["amount_q1_jpy"])),
+                        (t(lang, "中央値", "Median") + dagger, yen(page["amount_median_jpy"])),
+                        (t(lang, "第3四分位", "Q3") + dagger, yen(page["amount_q3_jpy"])),
+                        (t(lang, "最大", "Max"), yen(page["amount_max_jpy"])),
+                    )
+                )
+                link = bet_a_page_path(lang, SECTORS[sector][0], fy)
+                return figure(
+                    box,
+                    t(lang, f"{sname(sector)} {fy_label(fy)}: 落札価格の分布（箱 = 第1〜第3四分位、線 = 中央値、ひげ = 最小〜最大。対数目盛）。",
+                      f"{sname(sector)}, {fy_label(fy)}: award prices (box = Q1 to Q3, line = median, whiskers = min to max; log scale)."),
+                    "bet-a",
+                    f'<ul class="five">{five}</ul><p class="fine"><a href="{e(link)}">'
+                    f'{e(t(lang, "この統計のページ", "This statistics page"))}</a></p>',
+                )
+
+            raise ArticleError(f"unknown chart {cid!r}; available: {', '.join(ARTICLE_CHART_IDS)}")
+
+        return chart, used
+
+    return factory
+
+
+def build_article(art, chart_factory, counterpart: bool):
+    lang = art["lang"]
+    other = "en" if lang == "ja" else "ja"
+    path = article_path(lang, art["slug"])
+    alt = article_path(other, art["slug"]) if counterpart else path
+
+    chart, used = chart_factory(lang)
+    body_html, _toc = articles_mod.render_markdown(art["body"], chart, art["file"], art["body_line"])
+
+    published = art["date"].isoformat()
+    updated = art["updated"].isoformat()
+    meta = f'<span>{e(t(lang, "公開", "Published"))} <time class="num" datetime="{published}">{published}</time></span>'
+    if updated != published:
+        meta += f'<span>{e(t(lang, "更新", "Updated"))} <time class="num" datetime="{updated}">{updated}</time></span>'
+
+    sources = "".join(f"<li>{articles_mod.inline(s, art['file'])}</li>" for s in art["sources"])
+    data_links = []
+    if "bet-a" in used:
+        data_links.append(("/data/bet-a/index.json", t(lang, "落札統計のデータ（JSON）", "Tender-award data (JSON)")))
+    if "nta" in used:
+        data_links.append(("/data/bet-c/daily.json", t(lang, "法人番号の差分のデータ（JSON）", "Registry-diff data (JSON)")))
+    data_html = "".join(
+        f'<p class="fine">{icon("braces")}<a href="{e(h)}">{e(label)}</a></p>' for h, label in data_links
+    )
+
+    body = f"""
+<article class="post">
+<p class="crumb"><a href="/{lang}/articles/">{e(t(lang, "記事", "Articles"))}</a></p>
+<h1 class="title">{e(art["title"])}</h1>
+<p class="post-meta">{icon("kura")}{meta}</p>
+<p class="lede">{e(art["description"])}</p>
+<div class="prose">
+{body_html}
+</div>
+<section class="post-end" aria-labelledby="h-src">
+<h2 id="h-src">{e(t(lang, "出典", "Sources"))}</h2>
+<ul class="src-list">{sources}</ul>
+</section>
+<div class="post-act">
+<div class="act">{ARTICLE_INTENT[art["product"]](lang)}<a class="btn" href="/{lang}/subscribe.html">{icon("rss")}{e(t(lang, "RSS・JSON Feed で購読", "Subscribe by RSS or JSON Feed"))}</a></div>
+{intent_note(lang)}
+{data_html}
+</div>
+</article>
+"""
+
+    if lang == "ja":
+        desc_ja = art["description"]
+        desc_en = art["description_en"] or f"Japanese-language article from Deltakura: {art['title']}"
+    else:
+        desc_en = art["description"]
+        desc_ja = f"Deltakura の英語の記事: {art['title']}"
+
+    based_on = []
+    if "bet-a" in used:
+        based_on.append(BASE_URL + f"/{lang}/bet-a/")
+    if "nta" in used:
+        based_on.append(BASE_URL + f"/{lang}/bet-c/")
+    jsonld = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": art["title"][:110],
+        "description": art["description"],
+        "datePublished": published,
+        "dateModified": updated,
+        "inLanguage": lang,
+        "url": BASE_URL + path,
+        "mainEntityOfPage": BASE_URL + path,
+        "author": {"@type": "Organization", "name": BRAND, "url": BASE_URL + "/"},
+        "publisher": {"@type": "Organization", "name": OPERATOR_NAME, "url": OPERATOR_URL},
+        "isAccessibleForFree": True,
+        "citation": art["sources"],
+        **({"isBasedOn": based_on} if based_on else {}),
+    }
+    return path, render_page(
+        lang=lang,
+        path=path,
+        title=f"{art['title']} | Deltakura",
+        desc_ja=desc_ja,
+        desc_en=desc_en,
+        body=body,
+        alt_path=alt,
+        switch_path=f"/{other}/articles/",
+        jsonld=[jsonld],
+        attribution=source_notices(lang),
+        og_type="article",
+    )
+
+
+def build_articles_index(lang, arts, other_lang_count=0):
+    path = f"/{lang}/articles/"
+    other = "en" if lang == "ja" else "ja"
+    alt = f"/{other}/articles/"
+    feeds = (
+        f'<p class="fine">{icon("rss")}<a href="{e(FEED_URLS["articles.xml"])}">RSS</a>'
+        f' · <a href="{e(FEED_URLS["articles.json"])}">JSON Feed</a>'
+        f' · <a href="/{lang}/subscribe.html">{e(t(lang, "購読の方法", "How to subscribe"))}</a></p>'
+    )
+    if arts:
+        listing = article_list(lang, arts)
+    elif lang == "en":
+        listing = '<p class="lone-line">Articles are in Japanese only.' + (
+            ' <a href="/ja/articles/" hreflang="ja" lang="ja">記事一覧</a>' if other_lang_count else ""
+        ) + "</p>"
+    else:
+        listing = '<p class="lone-line">記事はまだありません。</p>'
+
+    body = f"""
+<h1 class="title">{e(t(lang, "記事", "Articles"))}</h1>
+<p class="sub">{e(t(lang, "蔵に保管したデータから書いた記事です。", "Articles written from the data in the storehouse."))}</p>
+{listing}
+{feeds}
+"""
+    jsonld = [{
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": t(lang, "Deltakura の記事", "Deltakura articles"),
+        "url": BASE_URL + path,
+        "inLanguage": lang,
+        "hasPart": [
+            {"@type": "Article", "headline": a["title"][:110], "url": BASE_URL + article_path(a["lang"], a["slug"]),
+             "datePublished": a["date"].isoformat()}
+            for a in arts
+        ],
+    }]
+    return path, render_page(
+        lang=lang,
+        path=path,
+        title=t(lang, "記事 | Deltakura", "Articles | Deltakura"),
+        desc_ja="Deltakura が保管した公開データから書いた記事の一覧。国の落札実績と法人番号の差分。",
+        desc_en="Articles Deltakura writes from the public data it keeps: national tender awards and the corporate registry diff.",
+        body=body,
+        alt_path=alt,
+        jsonld=jsonld,
+        attribution=source_notices(lang) if arts else None,
+    )
+
+
+def build_subscribe(lang):
+    path = f"/{lang}/subscribe.html"
+    alt = f"/{'en' if lang == 'ja' else 'ja'}/subscribe.html"
+
+    def slips(rows):
+        return '<dl class="urls">' + "".join(
+            f"<div><dt>{e(label)}</dt><dd><code class=\"url\">{e(url)}</code></dd></div>" for label, url in rows
+        ) + "</dl>"
+
+    if MCP_NPM_PUBLISHED:
+        config = json.dumps({"mcpServers": {"deltakura": {"command": "npx", "args": ["-y", MCP_PACKAGE]}}}, indent=2)
+        mcp_extra = f'<pre class="url"><code>{e(config)}</code></pre>'
+    else:
+        mcp_extra = f'<span class="state">{e(t(lang, "npm 公開前", "Not on npm yet"))}</span>'
+
+    tiles = [
+        ("rss", "RSS",
+         t(lang, "新しい記事と、法人番号の差分の週次まとめが届きます。", "New articles, and the weekly registry-diff summary."),
+         slips([(t(lang, "記事", "Articles"), FEED_URLS["articles.xml"]),
+                (t(lang, "法人番号の差分（週次）", "Registry diff (weekly)"), FEED_URLS["nta-diff.xml"])])),
+        ("braces", "JSON Feed",
+         t(lang, "同じ内容を JSON Feed 1.1 で。", "The same, as JSON Feed 1.1."),
+         slips([(t(lang, "記事", "Articles"), FEED_URLS["articles.json"]),
+                (t(lang, "法人番号の差分（日次）", "Registry diff (daily)"), FEED_URLS["nta-diff.json"])])),
+        ("plug", t(lang, "MCP サーバー", "MCP server"),
+         t(lang, "AI エージェントから落札統計と法人番号の差分を読めます。", "Lets an AI agent read the award statistics and the registry diff."),
+         mcp_extra + f'<p class="fine"><a href="{e(GITHUB_MCP)}" rel="noopener">{e(t(lang, "ソースコード（GitHub）", "Source (GitHub)"))}</a></p>'),
+        ("code", t(lang, "GitHub で Watch", "Watch on GitHub"),
+         t(lang, "Watch で Issue の通知、Atom フィードでデータ更新のコミットが届きます。", "Watch for issues; the Atom feed carries every data-update commit."),
+         slips([(t(lang, "リポジトリ", "Repository"), GITHUB_REPO),
+                (t(lang, "コミットの Atom フィード", "Commits, Atom feed"), GITHUB_COMMITS_ATOM)])),
+    ]
+    tiles_html = "".join(
+        f'<li><div class="sub-h">{icon(i)}<h2>{e(name)}</h2></div><p>{e(line)}</p>{extra}</li>'
+        for i, name, line, extra in tiles
+    )
+    body = f"""
+<h1 class="title">{e(t(lang, "購読する", "Subscribe"))}</h1>
+<p class="sub">{e(t(lang, "登録もメールアドレスも要りません。URL をフィードリーダーに入れるだけです。", "No sign-up and no email address: paste a URL into your feed reader."))}</p>
+<ul class="subs">{tiles_html}</ul>
+<p class="fine">{icon("shield")}{e(t(lang, "フィードの取得は、日ごとの件数だけを数えます。IP アドレスは保存しません。", "Feed fetches are counted as daily totals only. No IP address is stored."))} <a href="/{lang}/privacy.html">{e(t(lang, "プライバシー", "Privacy"))}</a></p>
+"""
+    return path, render_page(
+        lang=lang,
+        path=path,
+        title=t(lang, "購読する — RSS・JSON Feed・MCP | Deltakura", "Subscribe — RSS, JSON Feed, MCP | Deltakura"),
+        desc_ja="Deltakura の更新を受け取る方法。記事と法人番号の差分の RSS・JSON Feed、MCP サーバー、GitHub。登録もメールも不要。",
+        desc_en="Ways to follow Deltakura: RSS and JSON Feed for articles and the registry diff, the MCP server, GitHub. No sign-up, no email.",
+        body=body,
+        alt_path=alt,
+    )
+
+
+def build_articles_rss(arts, built_at):
+    items = []
+    for a in arts[:50]:
+        url = BASE_URL + article_path(a["lang"], a["slug"])
+        items.append(
+            "<item>"
+            f"<title>{e(a['title'])}</title>"
+            f"<link>{e(url)}</link>"
+            f'<guid isPermaLink="true">{e(url)}</guid>'
+            f"<pubDate>{rfc822(a['date'])}</pubDate>"
+            f"<description>{e(a['description'])}</description>"
+            "</item>"
+        )
+    built = dt.datetime.strptime(built_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    notice = f"{PPORTAL_ATTRIB}｜{PPORTAL_LICENSE_NAME}｜{PPORTAL_MODIFIED} / {NTA_FEED_NOTICE}"
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>Deltakura — 記事 / Articles</title>
+<link>{e(BASE_URL)}/ja/articles/</link>
+<atom:link href="{e(FEED_URLS['articles.xml'])}" rel="self" type="application/rss+xml"/>
+<description>{e("Deltakura が保管した公開データから書いた記事。 / Articles written from the public data Deltakura keeps.")}</description>
+<language>ja</language>
+<generator>Deltakura site build</generator>
+<lastBuildDate>{e(built.strftime("%a, %d %b %Y %H:%M:%S +0000"))}</lastBuildDate>
+<copyright>{e("Derived aggregates CC BY 4.0. " + notice)}</copyright>
+<ttl>1440</ttl>
+{chr(10).join(items)}
+</channel>
+</rss>
+"""
+
+
+def build_articles_json(arts, built_at):
+    def stamp(d):
+        return f"{d.isoformat()}T12:00:00Z"  # the same instant as the RSS pubDate
+
+    return {
+        "version": "https://jsonfeed.org/version/1.1",
+        "title": "Deltakura — 記事 / Articles",
+        "home_page_url": BASE_URL + "/ja/articles/",
+        "feed_url": FEED_URLS["articles.json"],
+        "description": "Deltakura が保管した公開データから書いた記事。 / Articles written from the public data Deltakura keeps.",
+        "language": "ja",
+        "authors": [{"name": BRAND, "url": BASE_URL + "/"}],
+        "items": [
+            {
+                "id": BASE_URL + article_path(a["lang"], a["slug"]),
+                "url": BASE_URL + article_path(a["lang"], a["slug"]),
+                "title": a["title"],
+                "summary": a["description"],
+                "content_text": a["description"],
+                "date_published": stamp(a["date"]),
+                "date_modified": stamp(a["updated"]),
+                "language": a["lang"],
+            }
+            for a in arts[:50]
+        ],
+        "_deltakura": {
+            "attribution": [PPORTAL_ATTRIB, NTA_ATTRIB],
+            "license": [PPORTAL_LICENSE_NAME, NTA_LICENSE_NAME],
+            "modified": [PPORTAL_MODIFIED, NTA_MODIFIED],
+            "derived_aggregates_license": "CC BY 4.0",
+            "generated_at": built_at,
+        },
+    }
+
+
+# --------------------------------------------------------------------------
 # Feed, sitemap, robots, data index
 # --------------------------------------------------------------------------
 
@@ -2065,7 +2740,7 @@ def build_feed(bet_c, built_at):
 <channel>
 <title>Deltakura — 法人番号 差分アーカイブ / Corporate registry diff (weekly)</title>
 <link>{e(BASE_URL)}/ja/bet-c/</link>
-<atom:link href="{e(BASE_URL)}/feeds/nta-diff.xml" rel="self" type="application/rss+xml"/>
+<atom:link href="{e(FEED_URLS['nta-diff.xml'])}" rel="self" type="application/rss+xml"/>
 <description>{e("国税庁 法人番号公表サイトの日次差分件数の週次サマリ。個別の法人名は配信しません。 / Weekly summary of daily record counts in the Japanese National Tax Agency corporate-number registry diff. No individual records, no names.")}</description>
 <language>ja</language>
 <generator>Deltakura site build</generator>
@@ -2102,7 +2777,7 @@ Sitemap: {BASE_URL}/sitemap.xml
 """
 
 
-def build_llms_txt(bet_a_pages, bet_a_prov, bet_c, built_at):
+def build_llms_txt(bet_a_pages, bet_a_prov, bet_c, built_at, arts=()):
     estimated = any(not p["quantiles_exact"] for p in bet_a_pages)
     quartiles = (
         "medians and quartiles marked with a dagger are estimated from aggregated buckets"
@@ -2139,7 +2814,7 @@ Site built: {built_at[:10]}. All dates and times are UTC.
 - Corporate-number registry diff archive: {bet_c['total']:,} records over
   {bet_c['n_files']} publication days ({bet_c['first_day']} to {bet_c['last_day']}),
   at /ja/bet-c/ and /en/bet-c/. JSON at /data/bet-c/daily.json, weekly RSS at
-  /feeds/nta-diff.xml. The publisher deletes each daily file after 40 days.
+  {FEED_URLS['nta-diff.xml']}. The publisher deletes each daily file after 40 days.
   Corporations and public bodies only; no individual's name is held.
   Attribution: {NTA_ATTRIB}
   Licence: {NTA_LICENSE_NAME}. {NTA_MODIFIED}
@@ -2148,9 +2823,10 @@ Site built: {built_at[:10]}. All dates and times are UTC.
 ## Privacy facts
 
 - No email collection, no form, no cookies, no analytics.
-- The only counter is the notify button: one view and one click per product,
+- Two counters. The notify button: one view and one click per product,
   browser and UTC day, stored as a salted hash for at most 25 hours; the count
-  is an upper bound.
+  is an upper bound. Feed fetches: daily totals per feed, de-duplicated by a
+  salted hash of User-Agent and IP /16 kept at most 25 hours; no IP is stored.
 - Individuals, including sole proprietors, are masked at ingestion. No winner
   directory exists.
 - Contact and removal requests: GitHub Issues, {GITHUB_ISSUES}
@@ -2161,9 +2837,13 @@ Site built: {built_at[:10]}. All dates and times are UTC.
 - /data/bet-a/<sector-slug>-fy<year>.json — one statistics page
 - /data/bet-c/daily.json — daily registry-diff counts
 - /data/site.json — build status and data freshness
-- /feeds/nta-diff.xml — weekly RSS
+- {FEED_URLS['articles.xml']} — articles, RSS
+- {FEED_URLS['articles.json']} — articles, JSON Feed 1.1
+- {FEED_URLS['nta-diff.xml']} — registry diff, weekly RSS
+- {FEED_URLS['nta-diff.json']} — registry diff, daily JSON Feed 1.1
+- /ja/subscribe.html — every way to follow updates
 - /sitemap.xml
-"""
+{llms_articles(arts)}"""
 
 
 # --------------------------------------------------------------------------
@@ -2242,7 +2922,7 @@ def attribution_problems(rel: str, text: str):
     return problems
 
 
-def check(out: Path, data_pages, data_json=frozenset(), figures=()):
+def check(out: Path, data_pages, data_json=frozenset(), figures=(), article_pages=frozenset()):
     problems = []
     total = 0
     biggest = ("", 0)
@@ -2263,6 +2943,7 @@ def check(out: Path, data_pages, data_json=frozenset(), figures=()):
         if (
             rel in data_pages
             or rel in data_json
+            or rel in article_pages
             or ATTRIB_MARKER in text
             or any(pat.search(text) for pat in figure_res)
         ):
@@ -2287,6 +2968,16 @@ def check(out: Path, data_pages, data_json=frozenset(), figures=()):
         if rel in data_pages:
             if '"@type":"Dataset"' not in text and '"@type":"DataCatalog"' not in text:
                 problems.append(f"{rel}: data page without Dataset JSON-LD")
+        if rel in article_pages:
+            # An article states numbers from the sources: Article JSON-LD, the
+            # attribution block and a notify button (so article views enter the
+            # intent denominator with their clicks) are all required.
+            if '"@type":"Article"' not in text:
+                problems.append(f"{rel}: article without Article JSON-LD")
+            if 'class="attrib"' not in text:
+                problems.append(f"{rel}: article without the attribution block")
+            if 'data-intent="' not in text:
+                problems.append(f"{rel}: article without a notify button")
     if total > 50 * 1024 * 1024:
         problems.append(f"total build {total / 1024 / 1024:.1f} MB exceeds 50 MB")
     return problems, total, biggest
@@ -2321,6 +3012,17 @@ def main(argv=None):
         f" {bet_a_prov['suppressed']:,} suppressed)\n"
         f"  bet C: {bet_c['n_files']} days, {bet_c['total']:,} records"
     )
+    try:
+        arts = articles_mod.load_articles(CONTENT_DIR)
+    except articles_mod.ArticleError as err:
+        print(f"article error: {err}", file=sys.stderr)
+        return 1
+    ARTICLE_LANGS.clear()
+    ARTICLE_LANGS.update(a["lang"] for a in arts)
+    n_ja = sum(1 for a in arts if a["lang"] == "ja")
+    print(f"  articles: {len(arts)} (ja {n_ja}, en {len(arts) - n_ja})")
+    chart_factory = article_charts(bet_a_pages, bet_c)
+    article_pages = set()
 
     years_by_sector = collections.defaultdict(list)
     for p in bet_a_pages:
@@ -2356,7 +3058,8 @@ def main(argv=None):
 
     index_entries = []
     for lang in ("ja", "en"):
-        path, _alt, doc = build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at)
+        lang_arts = [a for a in arts if a["lang"] == lang]
+        path, _alt, doc = build_home(lang, bet_a_pages, bet_a_prov, bet_c, built_at, arts=lang_arts)
         emit(path, doc)
 
         path, _alt, doc = build_bet_a_index(lang, bet_a_pages, bet_a_prov, built_at)
@@ -2399,6 +3102,21 @@ def main(argv=None):
             any_estimated=any(not p["quantiles_exact"] for p in bet_a_pages),
         )
         emit(path, doc)
+
+        path, doc = build_subscribe(lang)
+        emit(path, doc)
+
+        path, doc = build_articles_index(lang, lang_arts, other_lang_count=len(arts) - len(lang_arts))
+        emit(path, doc)
+        for art in lang_arts:
+            counterpart = any(b["slug"] == art["slug"] and b["lang"] != lang for b in arts)
+            try:
+                path, doc = build_article(art, chart_factory, counterpart)
+            except articles_mod.ArticleError as err:
+                print(f"article error: {err}", file=sys.stderr)
+                return 1
+            emit(path, doc)
+            article_pages.add(path.lstrip("/"))
 
     # ---- JSON endpoints
     write_json(
@@ -2532,9 +3250,10 @@ def main(argv=None):
                     "records": bet_c["total"],
                     "publication_days": bet_c["n_files"],
                     "endpoint": "/data/bet-c/daily.json",
-                    "feed": "/feeds/nta-diff.xml",
+                    "feed": FEED_URLS["nta-diff.xml"],
                 },
             },
+            "feeds": {**FEED_URLS, "stats": FEED_STATS_URL},
             # site.json carries the same headline counts as the home pages, so
             # it carries the same three-part attribution they do.
             "provenance": {
@@ -2555,7 +3274,15 @@ def main(argv=None):
                 "derived_aggregates_license": "CC BY 4.0",
             },
             "contact": {"github_issues": GITHUB_ISSUES, "email": None},
-            "privacy": {"cookies": False, "email_collection": False, "third_party_trackers": False},
+            "privacy": {
+                "cookies": False,
+                "email_collection": False,
+                "third_party_trackers": False,
+                "feed_fetch_counting": (
+                    "daily totals per feed, de-duplicated by a salted hash of User-Agent and "
+                    "IP /16 kept at most 25 hours; no IP address is stored"
+                ),
+            },
         },
     )
 
@@ -2565,7 +3292,11 @@ def main(argv=None):
         ("/data/bet-a/index.json", "every tender-award statistics page"),
         ("/data/bet-a/&lt;sector-slug&gt;-fy&lt;year&gt;.json", "one statistics page"),
         ("/data/bet-c/daily.json", "daily registry-diff counts"),
-        ("/feeds/nta-diff.xml", "weekly RSS of the registry diff"),
+        (FEED_URLS["nta-diff.xml"], "weekly RSS of the registry diff"),
+        (FEED_URLS["nta-diff.json"], "daily JSON Feed of the registry diff"),
+        (FEED_URLS["articles.xml"], "articles, RSS"),
+        (FEED_URLS["articles.json"], "articles, JSON Feed"),
+        (FEED_STATS_URL, "feed fetch counts per day"),
     ]
     rows = [[f'<code>{u}</code>' if "&lt;" in u else f'<a href="{u}"><code>{u}</code></a>', e(d)] for u, d in endpoints]
     emit(
@@ -2589,9 +3320,11 @@ def main(argv=None):
 
     # ---- feed, sitemap, robots, llms.txt
     write(OUT / "feeds" / "nta-diff.xml", build_feed(bet_c, built_at))
+    write(OUT / "feeds" / "articles.xml", build_articles_rss(arts, built_at))
+    write_json(OUT / "feeds" / "articles.json", build_articles_json(arts, built_at))
     write(OUT / "sitemap.xml", build_sitemap(written, built_at))
     write(OUT / "robots.txt", build_robots())
-    write(OUT / "llms.txt", build_llms_txt(bet_a_pages, bet_a_prov, bet_c, built_at))
+    write(OUT / "llms.txt", build_llms_txt(bet_a_pages, bet_a_prov, bet_c, built_at, arts))
     write(
         OUT / "404.html",
         render_page(
@@ -2625,7 +3358,7 @@ def main(argv=None):
             bet_c["total"],
             bet_c["total_raw"],
         )
-        problems, total, biggest = check(OUT, data_pages, data_json, figures)
+        problems, total, biggest = check(OUT, data_pages, data_json, figures, article_pages)
         n_files = sum(1 for p in OUT.rglob("*") if p.is_file())
         print(
             f"check: {n_files} files, {total / 1024 / 1024:.2f} MB total, "

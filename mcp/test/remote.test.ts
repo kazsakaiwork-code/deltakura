@@ -17,22 +17,23 @@ describe('mode selection', () => {
     expect(dataMode(loadConfig({ DELTAKURA_DATA_DIR: '/somewhere' } as NodeJS.ProcessEnv))).toBe('local');
   });
 
-  it('defaults to the documented API base and trims trailing slashes', () => {
+  it('defaults to the live workers.dev API base and trims trailing slashes', () => {
     expect(loadConfig(emptyEnv).apiBase).toBe(DEFAULT_API_BASE);
-    expect(DEFAULT_API_BASE).toBe('https://api.deltakura.dev/v0');
+    expect(DEFAULT_API_BASE).toBe('https://deltakura-api.deltakura.workers.dev/v0');
     expect(loadConfig({ DELTAKURA_API_BASE: 'https://example.test/v0//' } as NodeJS.ProcessEnv).apiBase).toBe(
       'https://example.test/v0'
     );
   });
 });
 
-describe('remote mode while the API is not deployed', () => {
+describe('remote mode is opt-in', () => {
   it('fails clearly for a lookup and touches no network', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const err = await lookupCorporateNumber(loadConfig(emptyEnv), '1010001005145').catch((e) => e);
     expect(err).toBeInstanceOf(RemoteNotAvailableError);
-    expect(err.message).toContain('remote not available yet');
-    expect(err.message).toContain('https://api.deltakura.dev/v0/corporate/1010001005145');
+    expect(err.message).toContain('remote not available');
+    expect(err.message).toContain('https://deltakura-api.deltakura.workers.dev/v0/corporate/1010001005145');
+    expect(err.message).toContain('DELTAKURA_API_ENABLED=1');
     expect(err.message).toContain('DELTAKURA_DATA_DIR');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -54,6 +55,21 @@ describe('remote mode while the API is not deployed', () => {
     expect(fetchSpy).toHaveBeenCalledOnce();
     expect(err).toBeInstanceOf(RemoteNotAvailableError);
     expect(err.message).toContain('HTTP 503');
+  });
+
+  it('calls the workers.dev host by default once enabled', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json({ corporate_number: '1010001005145', found: true }));
+    await lookupCorporateNumber(loadConfig({ DELTAKURA_API_ENABLED: '1' } as NodeJS.ProcessEnv), '1010001005145');
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(String(fetchSpy.mock.calls[0][0])).toBe(
+      'https://deltakura-api.deltakura.workers.dev/v0/corporate/1010001005145'
+    );
+  });
+
+  it('never points at the unregistered api.deltakura.dev host', () => {
+    expect(DEFAULT_API_BASE).not.toContain('api.deltakura.dev');
   });
 
   it('returns the API payload when the API answers', async () => {
