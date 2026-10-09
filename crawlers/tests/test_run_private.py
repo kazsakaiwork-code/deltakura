@@ -431,3 +431,113 @@ def test_data_dir_flag_is_read_before_the_store_is_resolved():
     assert rp._early_data_dir(["--data-dir", "X", "nightly"]) == "X"
     assert rp._early_data_dir(["--data-dir=Y", "weekly"]) == "Y"
     assert rp._early_data_dir(["nightly"]) is None
+
+
+# ------------------------------------------------------ registry health
+
+def test_inactive_and_candidate_boards_are_not_fetched():
+    reg = [{"ats": "greenhouse", "board_token": "a", "status": "active"},
+           {"ats": "greenhouse", "board_token": "b", "status": ""},          # legacy row
+           {"ats": "greenhouse", "board_token": "c", "status": "inactive"},
+           {"ats": "lever", "board_token": "d", "status": "candidate"},
+           {"ats": "lever", "board_token": "e"}]                            # no column at all
+    assert [b["board_token"] for b in ats.active_boards(reg)] == ["a", "b", "e"]
+    assert ats_collect.active_boards is ats.active_boards
+
+
+def test_the_committed_registry_keeps_history_and_explains_every_inactive_row():
+    with (CRAWLERS / "ats_registry" / "registry.csv").open(encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    allowed = {ats.STATUS_ACTIVE, ats.STATUS_INACTIVE, ats.STATUS_CANDIDATE}
+    keys = [(r["ats"], r["board_token"]) for r in rows]
+    assert len(keys) == len(set(keys)), "duplicate registry rows"
+    for r in rows:
+        assert r["status"] in allowed, r
+        if r["status"] != ats.STATUS_ACTIVE:
+            assert r["status_checked_on"] and r["status_reason"], r
+
+
+def test_health_flags_a_board_after_three_consecutive_failed_nights():
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        state, health = tmp / "n.json", tmp / "registry_health.csv"
+        err = "https://boards-api.greenhouse.io/v1/boards/gone/jobs -> HTTP 404"
+        for i, day in enumerate(("2026-10-01", "2026-10-02", "2026-10-03"), start=1):
+            night = rp.NightState(state, day)
+            rp.record_board_outcome(night, "greenhouse:gone", ok=False, error=err, at="t")
+            rp.record_board_outcome(night, "greenhouse:fine", ok=True)
+            flagged = rp.write_registry_health(health, night, ["greenhouse:gone", "greenhouse:fine"])
+            night.save()
+            assert flagged == (["greenhouse:gone"] if i >= rp.HEALTH_FLAG_NIGHTS else []), (i, flagged)
+        with health.open(encoding="utf-8") as fh:
+            rows = list(csv.DictReader(fh))
+        assert len(rows) == 1
+        row = rows[0]
+        assert (row["ats"], row["board_token"]) == ("greenhouse", "gone")
+        assert row["consecutive_failed_nights"] == "3" and row["flagged"] == "Y"
+        assert row["first_failed_night"] == "2026-10-01"
+        assert row["last_failed_night"] == "2026-10-03"
+        assert "removed or token renamed" in row["likely_cause"]
+
+
+def test_a_failure_counts_once_per_night_and_a_success_resets_the_streak():
+    with tempfile.TemporaryDirectory() as tmp:
+        night = rp.NightState(Path(tmp) / "n.json", "2026-10-01")
+        for _ in range(3):                                    # same-night re-runs
+            rp.record_board_outcome(night, "lever:x", ok=False, error="HTTP 503")
+        assert night.fail_streak["lever:x"]["count"] == 1
+        night.night = "2026-10-02"
+        rp.record_board_outcome(night, "lever:x", ok=False, error="HTTP 503")
+        assert night.fail_streak["lever:x"]["count"] == 2
+        night.night = "2026-10-03"
+        rp.record_board_outcome(night, "lever:x", ok=True)
+        assert "lever:x" not in night.fail_streak
+
+
+def test_health_forgets_boards_that_left_the_active_registry():
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        night = rp.NightState(tmp / "n.json", "2026-10-01")
+        night.fail_streak["greenhouse:old"] = {"count": 5, "last_failed_night": "2026-10-01"}
+        assert rp.write_registry_health(tmp / "h.csv", night, ["greenhouse:other"]) == []
+        assert night.fail_streak == {}
+        with (tmp / "h.csv").open(encoding="utf-8") as fh:
+            assert list(csv.reader(fh)) == [rp.HEALTH_COLUMNS]
+
+
+def test_likely_cause_separates_removed_boards_from_transient_errors():
+    assert "removed" in rp.likely_cause("x -> HTTP 404")
+    assert "transient" in rp.likely_cause("x -> HTTP 429")
+    assert "transient" in rp.likely_cause("x -> HTTP 503")
+    assert "transient" in rp.likely_cause("fetch failed for x: timed out")
+    assert "robots" in rp.likely_cause("robots.txt disallows x")
+
+
+def test_reverification_never_drops_or_reactivates_a_registry_row():
+    verify = _load("deltakura_ats_verify", CRAWLERS / "ats_registry" / "verify.py")
+    base = {"company_name": "C", "checked_on": "2026-09-21"}
+    existing = [
+        {"ats": "greenhouse", "board_token": "gone", "status": "inactive",
+         "status_checked_on": "2026-10-10", "status_reason": "404", **base},
+        {"ats": "lever", "board_token": "cand", "status": "candidate",
+         "status_checked_on": "2026-10-10", "status_reason": "proposed", **base},
+        {"ats": "lever", "board_token": "nojp", "status": "active", **base},
+        {"ats": "lever", "board_token": "cached", "status": "", **base},
+    ]
+    rebuilt = [  # verification found Japan postings on these again
+        {"ats": "greenhouse", "board_token": "gone", "checked_on": "2026-10-11"},
+        {"ats": "lever", "board_token": "cand", "checked_on": "2026-10-11"},
+        {"ats": "lever", "board_token": "brandnew", "checked_on": "2026-10-11"},
+    ]
+    results = {("lever", "nojp"): {"status": "no_japan_postings", "checked_on": "2026-10-11"},
+               ("lever", "cached"): {"status": "unchanged", "checked_on": "2026-10-11"}}
+    out = {(r["ats"], r["board_token"]): r for r in verify.merge_registry(existing, rebuilt, results)}
+    assert len(out) == 5
+    assert out[("greenhouse", "gone")]["status"] == "inactive"
+    assert out[("greenhouse", "gone")]["status_reason"] == "404"
+    assert out[("lever", "cand")]["status"] == "candidate"
+    assert out[("lever", "brandnew")]["status"] == "active"
+    assert out[("lever", "nojp")]["status"] == "inactive"
+    assert out[("lever", "nojp")]["status_reason"] == "verify.py: no_japan_postings"
+    assert out[("lever", "cached")]["status"] == ""            # a 304 changes nothing
+    assert list(verify.REGISTRY_COLUMNS[-3:]) == list(ats.REGISTRY_STATUS_COLUMNS)

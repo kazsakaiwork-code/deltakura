@@ -46,7 +46,11 @@ REGISTRY_COLUMNS = [
     "japan_hiring_evidence",
     "source_url",
     "checked_on",
+    *ats_mod.REGISTRY_STATUS_COLUMNS,
 ]
+
+#: A fresh verification result that means "this board no longer qualifies".
+_NOT_QUALIFYING = ("not_found", "empty_board", "no_japan_postings")
 
 # Kept beside the registry so a later run can tell "not checked" from
 # "checked and rejected" without re-requesting the board.
@@ -71,6 +75,46 @@ def write_csv(path: Path, columns: List[str], rows: List[Dict[str, str]]) -> Non
         writer.writeheader()
         for row in rows:
             writer.writerow({c: row.get(c, "") for c in columns})
+
+
+def merge_registry(
+    existing: List[Dict[str, str]],
+    rebuilt: List[Dict[str, str]],
+    results: Dict[tuple, Dict[str, str]],
+) -> List[Dict[str, str]]:
+    """Merge a rebuilt registry into the one on disk without losing history.
+
+    * a board already in the registry keeps its lifecycle status: verification
+      never re-activates an `inactive` board or promotes a `candidate` (that
+      is a reviewed decision, made by editing the row);
+    * a board that is new to the registry starts `active`;
+    * a registry row that the rebuild no longer produces is kept. If it was
+      active and its latest verification result says it no longer qualifies,
+      it becomes `inactive` with that result as the reason; otherwise (e.g.
+      a 304 or an error) it is left exactly as it was.
+    """
+    old = {(r["ats"], r["board_token"].strip()): r for r in existing}
+    out: Dict[tuple, Dict[str, str]] = {}
+    for row in rebuilt:
+        key = (row["ats"], row["board_token"].strip())
+        prior = old.get(key)
+        merged = dict(row)
+        for col in ats_mod.REGISTRY_STATUS_COLUMNS:
+            merged[col] = (prior or {}).get(col, "")
+        merged["status"] = merged["status"] or ats_mod.STATUS_ACTIVE
+        out[key] = merged
+    for key, prior in old.items():
+        if key in out:
+            continue
+        row = dict(prior)
+        result = results.get(key) or {}
+        if (ats_mod.is_active(row) and result.get("status") in _NOT_QUALIFYING
+                and (result.get("checked_on") or "") >= (row.get("checked_on") or "")):
+            row["status"] = ats_mod.STATUS_INACTIVE
+            row["status_checked_on"] = result.get("checked_on", "")
+            row["status_reason"] = f"verify.py: {result['status']}"
+        out[key] = row
+    return [out[k] for k in sorted(out)]
 
 
 def run(argv: Optional[List[str]] = None) -> int:
@@ -199,13 +243,16 @@ def run(argv: Optional[List[str]] = None) -> int:
             }
         )
 
+    # Never drop a row: inactive and candidate boards keep their history.
+    registry = merge_registry(read_csv(REGISTRY), registry, results)
     write_csv(REGISTRY, REGISTRY_COLUMNS, registry)
 
     counts: Dict[str, int] = {}
     for r in results.values():
         counts[r.get("status", "?")] = counts.get(r.get("status", "?"), 0) + 1
+    active = len(ats_mod.active_boards(registry))
     print(f"[verify] outcomes  : {counts}")
-    print(f"[verify] registry  : {len(registry)} verified Japan-hiring company(ies) "
+    print(f"[verify] registry  : {active} active of {len(registry)} row(s) "
           f"-> crawlers/ats_registry/registry.csv")
     return 0
 

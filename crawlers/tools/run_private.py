@@ -32,7 +32,12 @@ or sends anything.
    rest of the night; and no host receives more than 400 requests in a night.
    Boards on the opt-out blocklist (`ats/blocklist.csv`) are never fetched and
    their postings are purged from the store. Postings are built from the
-   field allow-list in `ats_registry/ats.py` only.
+   field allow-list in `ats_registry/ats.py` only. Only `active` registry
+   rows are fetched; `inactive` and `candidate` rows are kept for history.
+   *Registry health:* a board that fails on 3 consecutive nights it was
+   fetched is flagged in `ats/registry_health.csv` (rewritten each night with
+   every failing board) and named in the run-log note. Nothing is deactivated
+   automatically; a human reviews and edits the registry.
 3. *Bet C top-up.* The NTA diff collector in `--backfill` mode, which fetches
    every file in the publisher's 40-day window that this store does not
    physically hold. The scheduled cloud run keeps counts only; this is what
@@ -542,6 +547,9 @@ class NightState:
         self.path = path
         data = read_json(path, {})
         self.last_ok: Dict[str, str] = dict(data.get("last_ok") or {})
+        # Per-board run of failed nights; survives the night boundary like last_ok.
+        self.fail_streak: Dict[str, Dict[str, object]] = {
+            k: dict(v) for k, v in (data.get("fail_streak") or {}).items()}
         if data.get("night") == night:
             self.fetched: Dict[str, str] = dict(data.get("fetched") or {})
             self.halted: Dict[str, str] = dict(data.get("halted") or {})
@@ -554,7 +562,93 @@ class NightState:
         write_json(self.path, {
             "night": self.night, "fetched": self.fetched, "halted": self.halted,
             "requests": self.requests, "last_ok": self.last_ok,
+            "fail_streak": self.fail_streak,
         })
+
+
+# ----------------------------------------------------- registry health
+#
+# A board that fails night after night is almost always a registry problem, not
+# a network one: the company removed the board, renamed its token or moved to
+# another ATS. The run log only counts failures, so the board is named here.
+# After HEALTH_FLAG_NIGHTS consecutive failed nights it is flagged in
+# `ats/registry_health.csv` (private store) for a human to review and, if it is
+# gone, mark `inactive` in registry.csv. Nothing is deactivated automatically.
+
+#: Consecutive failed nights after which a board is flagged.
+HEALTH_FLAG_NIGHTS = 3
+
+HEALTH_COLUMNS = [
+    "ats", "board_token", "consecutive_failed_nights", "flagged",
+    "first_failed_night", "last_failed_night", "last_error", "likely_cause",
+    "last_ok_at", "updated_night",
+]
+
+
+def likely_cause(error: str) -> str:
+    """A first reading of a failure, for the reviewer. Not acted on."""
+    e = error or ""
+    if "robots" in e.lower():
+        return "robots.txt refused: clearance question, see the gate"
+    if re.search(r"HTTP 404\b|HTTP 410\b", e):
+        return "board removed or token renamed: check the company's careers page"
+    if re.search(r"HTTP 429\b|HTTP 5\d\d\b", e):
+        return "rate limit or server error: usually transient"
+    return "network or payload error: usually transient"
+
+
+def record_board_outcome(night: NightState, key: str, ok: bool, error: str = "",
+                         at: str = "") -> None:
+    """Count at most one failure per board per night; any success resets."""
+    if ok:
+        night.fail_streak.pop(key, None)
+        return
+    entry = night.fail_streak.get(key) or {
+        "count": 0, "first_failed_night": night.night}
+    if entry.get("last_failed_night") != night.night:
+        entry["count"] = int(entry.get("count") or 0) + 1
+        entry["last_failed_night"] = night.night
+    entry["last_error"] = (error or "")[:200]
+    entry["last_failed_at"] = at
+    night.fail_streak[key] = entry
+
+
+def write_registry_health(path: Path, night: NightState,
+                          active_keys: Iterable[str]) -> List[str]:
+    """Rewrite the health file with every active board that is failing.
+
+    Boards no longer in the active registry are forgotten (a deactivated board
+    is not "unhealthy"). Returns the flagged keys, sorted.
+    """
+    active = set(active_keys)
+    for key in [k for k in night.fail_streak if k not in active]:
+        night.fail_streak.pop(key)
+    rows, flagged = [], []
+    for key in sorted(night.fail_streak):
+        entry = night.fail_streak[key]
+        count = int(entry.get("count") or 0)
+        is_flagged = count >= HEALTH_FLAG_NIGHTS
+        if is_flagged:
+            flagged.append(key)
+        name, token = key.split(":", 1)
+        rows.append({
+            "ats": name, "board_token": token,
+            "consecutive_failed_nights": count, "flagged": "Y" if is_flagged else "N",
+            "first_failed_night": entry.get("first_failed_night", ""),
+            "last_failed_night": entry.get("last_failed_night", ""),
+            "last_error": entry.get("last_error", ""),
+            "likely_cause": likely_cause(str(entry.get("last_error", ""))),
+            "last_ok_at": night.last_ok.get(key, ""),
+            "updated_night": night.night,
+        })
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=HEALTH_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    tmp.replace(path)
+    return flagged
 
 
 def plan_board(key: str, host: str, *, blocked: bool, gate_halt: Optional[str],
@@ -611,9 +705,18 @@ def _bet_b_body(cap: int, now: str, counts: Dict[str, int], notes: List[str]) ->
     ats = ats_module()
     check_stored_columns(collect.JOBS_COLUMNS)
 
-    registry = collect.read_csv(collect.REGISTRY)
+    full_registry = collect.read_csv(collect.REGISTRY)
+    registry = ats.active_boards(full_registry)
     if not registry:
-        raise RuntimeError("registry.csv is empty")
+        raise RuntimeError("registry.csv has no active board")
+    if len(registry) != len(full_registry):
+        by_status: Dict[str, int] = {}
+        for row in full_registry:
+            if not ats.is_active(row):
+                st = (row.get("status") or "").strip().lower()
+                by_status[st] = by_status.get(st, 0) + 1
+        notes.append(f"registry {len(registry)} active (not fetched: "
+                     + ", ".join(f"{v} {k}" for k, v in sorted(by_status.items())) + ")")
 
     hold = ats.hold_reason()
     clearances = {name: tos.clear(row, hold=hold) for name, row in ats.TOS_ROWS.items()}
@@ -688,6 +791,7 @@ def _bet_b_body(cap: int, now: str, counts: Dict[str, int], notes: List[str]) ->
             collect.confirm_unchanged(jobs, present, now, clearances[name].tos_status)
             seen_ids.update(present)
             night.last_ok[key] = now
+            record_board_outcome(night, key, ok=True)
             print(f"[ats] {i:>3}/{len(registry)} {key:<40} unchanged (304)")
             night.save()
             continue
@@ -701,17 +805,20 @@ def _bet_b_body(cap: int, now: str, counts: Dict[str, int], notes: List[str]) ->
         except http.HostPaused as exc:
             counts["failed"] += 1
             night.halted[host] = "3 consecutive failures"
+            record_board_outcome(night, key, ok=False, error=str(exc), at=now)
             print(f"[ats] {i:>3}/{len(registry)} {key:<40} FAILED, host halted: {exc}")
             night.save()
             continue
         except http.RobotsDisallowed as exc:
             counts["failed"] += 1
             night.halted[host] = "robots.txt refused"
+            record_board_outcome(night, key, ok=False, error=str(exc), at=now)
             print(f"[ats] {i:>3}/{len(registry)} {key:<40} FAILED, host halted: {exc}")
             night.save()
             continue
         except (RuntimeError, ValueError) as exc:
             counts["failed"] += 1
+            record_board_outcome(night, key, ok=False, error=str(exc), at=now)
             print(f"[ats] {i:>3}/{len(registry)} {key:<40} FAILED {exc}")
             night.save()
             continue
@@ -723,6 +830,7 @@ def _bet_b_body(cap: int, now: str, counts: Dict[str, int], notes: List[str]) ->
         seen_ids.update(seen)
         counts["new"] += new
         night.last_ok[key] = now
+        record_board_outcome(night, key, ok=True)
         night.save()
         print(f"[ats] {i:>3}/{len(registry)} {key:<40} "
               f"{len(postings):>4} postings, {jp:>3} JP, {new:>4} new")
@@ -734,7 +842,20 @@ def _bet_b_body(cap: int, now: str, counts: Dict[str, int], notes: List[str]) ->
     check_stored_columns(collect.JOBS_COLUMNS)
     collect.write_jobs(jobs_path, jobs)
     session.save_state()
+
+    # 4. registry health ----------------------------------------------------
+    flagged = write_registry_health(
+        paths.data_dir("ats") / "registry_health.csv", night,
+        (f"{b['ats'].strip()}:{b['board_token'].strip()}" for b in registry))
     night.save()
+    failing = len(night.fail_streak)
+    if flagged:
+        notes.append(f"health FLAGGED {len(flagged)} board(s) failing "
+                     f">= {HEALTH_FLAG_NIGHTS} nights: " + ", ".join(flagged))
+    elif failing:
+        notes.append(f"health {failing} board(s) failing < {HEALTH_FLAG_NIGHTS} nights")
+    print(f"[ats] health   : {failing} board(s) failing, {len(flagged)} flagged"
+          + (f" ({', '.join(flagged)})" if flagged else ""))
 
     if skipped:
         notes.append("skipped " + ", ".join(f"{v} {k}" for k, v in sorted(skipped.items())))

@@ -42,6 +42,8 @@ import ats as ats_mod  # noqa: E402
 import japan  # noqa: E402
 
 REGISTRY = HERE / "registry.csv"
+# Only `active` registry rows are fetched; see the lifecycle note in ats.py.
+active_boards = ats_mod.active_boards
 
 JOBS_COLUMNS = [
     "posting_id",
@@ -259,9 +261,9 @@ def run(argv: Optional[List[str]] = None) -> int:
                     help="per-host budget, set explicitly; see verify.py --help")
     args = ap.parse_args(argv)
 
-    registry = read_csv(REGISTRY)
+    registry = active_boards(read_csv(REGISTRY))
     if not registry:
-        print(f"[ats] {REGISTRY.name} is empty; run verify.py first")
+        print(f"[ats] {REGISTRY.name} has no active board; run verify.py first")
         return 1
 
     # Fail-closed clearance, plus the Bet-B operational hold. Greenhouse and

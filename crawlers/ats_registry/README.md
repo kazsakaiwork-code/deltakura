@@ -52,9 +52,21 @@ candidate list can be gathered cheaply and broadly: verification, not research,
 is what makes the registry true.
 
 `registry.csv` columns: `ats, board_token, company_name, company_domain,
-hq_country, japan_hiring_evidence, source_url, checked_on`. The evidence field
-records what was actually observed — the number of Japan-located postings and a
-sample location string — not a claim from a web page.
+hq_country, japan_hiring_evidence, source_url, checked_on, status,
+status_checked_on, status_reason`. The evidence field records what was actually
+observed — the number of Japan-located postings and a sample location string —
+not a claim from a web page.
+
+**Rows are never deleted.** `status` is `active` (fetched nightly), `inactive`
+(the board was removed, renamed or moved; kept so the postings already collected
+keep their provenance) or `candidate` (proposed, not fetched until approved).
+Every non-active row carries the date it was decided and why. A renamed token is
+a new `active` row once the new token is confirmed to belong to the same company
+from public information; the old row becomes `inactive` with a reason naming the
+new token. `verify.py` never re-activates an inactive row or promotes a
+candidate: that is an edit a reviewer makes. The nightly runner flags a board
+that fails on three consecutive nights in a private health file; it does not
+change the registry itself.
 
 ## Why a registry is needed at all
 

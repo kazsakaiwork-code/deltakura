@@ -172,6 +172,26 @@ def parse(ats: str, payload: Any) -> List[Dict[str, str]]:
     raise ValueError(f"unsupported ATS {ats!r}")
 
 
+#: Registry lifecycle (`registry.csv`), added 2026-10-10. A board is never
+#: deleted from the registry: a removed board becomes `inactive`, with the date
+#: and the reason, so the postings already collected for it keep their
+#: provenance. A `candidate` is a proposed board that is not fetched until it is
+#: approved. A blank status (rows written before the column existed) is `active`.
+STATUS_ACTIVE = "active"
+STATUS_INACTIVE = "inactive"
+STATUS_CANDIDATE = "candidate"
+REGISTRY_STATUS_COLUMNS = ("status", "status_checked_on", "status_reason")
+
+
+def is_active(board: Dict[str, str]) -> bool:
+    return (board.get("status") or STATUS_ACTIVE).strip().lower() == STATUS_ACTIVE
+
+
+def active_boards(registry: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """The registry rows a collection run fetches: active ones only."""
+    return [b for b in registry if is_active(b)]
+
+
 def posting_id(ats: str, token: str, job_id: str) -> str:
     """The Bet-B posting key."""
     return f"{ats}:{token}:{job_id}"
